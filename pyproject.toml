@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "theorydd"
+version = "0.0.1"
+authors = [
+  { name="Massimo Michelutti", email="massimo.michelutti@studenti.unitn.it" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "Cython==3.0.8",
+    "dd @ git+https://github.com/masinag/dd.git@main",
+    "pydot==1.4.2",
+    "PySDD==0.2.11",
+    "PySMT==0.9.6.dev53",
+    "pywmi @ git+https://github.com/weighted-model-integration/pywmi@1c642518c75211d909fcfeb940085d6f12c1918f",
+]
+
+[project.urls]
+Homepage = "https://github.com/pypa/sampleproject"
+Issues = "https://github.com/pypa/sampleproject/issues"
