@@ -16,7 +16,8 @@ from theorydd._string_generator import (
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
-
+from theorydd.constants import SAT, UNSAT, VALID_VTREE
+from theorydd.custom_exceptions import InvalidVTreeException
 
 class TheorySDD:
     """class to generate and handle T-SDDs"""
@@ -38,6 +39,8 @@ class TheorySDD:
         tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
     ) -> None:
+        if not vtree_type in VALID_VTREE:
+            raise InvalidVTreeException("Invalid V-Tree type \""+str(vtree_type)+"\".\n Valid V-Tree types: "+str(VALID_VTREE))
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("T-SDD") is None:

@@ -16,7 +16,13 @@ class UnsupportedSymbolException(Exception):
 
 
 class InvalidLDDTheoryException(Exception):
-    '''An exception for invalid LDD theries'''
+    '''An exception for invalid LDD theories'''
+
+    def __init__(self, message):
+        super().__init__(message)
+
+class InvalidVTreeException(Exception):
+    '''An exception for invalid Vtree types'''
 
     def __init__(self, message):
         super().__init__(message)

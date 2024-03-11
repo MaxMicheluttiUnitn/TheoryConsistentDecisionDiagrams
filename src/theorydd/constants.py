@@ -2,7 +2,11 @@
 
 # VALID ITEMS
 
-VALID_SOLVERS = ["partial", "total"]
+VALID_VTREE = ["left", "right", "balanced", "vertical", "random"]
+
+VALID_LDD_THEORY = ["TVPI","TVPIZ","UTVPIZ","BOX","BOXZ"]
+
+VALID_SOLVER = ["partial","total"]
 
 # SAT / UNSAT
 

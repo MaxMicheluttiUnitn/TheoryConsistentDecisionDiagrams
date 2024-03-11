@@ -14,6 +14,7 @@ from theorydd._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd.lemma_extractor import extract, find_qvars
+from theorydd.constants import SAT, UNSAT
 
 
 class TheoryBDD:
