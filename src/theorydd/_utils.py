@@ -1,9 +1,6 @@
 """utility functions module"""
 
-VALID_SOLVERS = ["partial", "total"]
-
-SAT = True
-UNSAT = False
+from theorydd.constants import VALID_SOLVERS
 
 
 def is_valid_solver(solver: str):

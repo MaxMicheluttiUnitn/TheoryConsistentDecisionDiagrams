@@ -4,8 +4,9 @@ import time
 from typing import Dict, List, Tuple
 from pysmt.fnode import FNode
 from theorydd import formula
-from theorydd.smt_solver import SAT, UNSAT, SMTSolver
+from theorydd.smt_solver import SMTSolver
 from theorydd.smt_solver_partial import PartialSMTSolver
+from theorydd.constants import SAT, UNSAT
 
 
 def extract(

@@ -8,7 +8,7 @@ version = "0.0.1"
 authors = [
   { name="Massimo Michelutti", email="massimo.michelutti@studenti.unitn.it" },
 ]
-description = "A small example package"
+description = "Theory Consistent decision diagrams in Python through interfaces with the mathsat SMT-solver and with Cython implementations of Decision Diagrams"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [

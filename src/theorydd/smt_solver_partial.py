@@ -6,7 +6,7 @@ from pysmt.shortcuts import Solver, And
 from pysmt.fnode import FNode
 import mathsat
 from allsat_cnf.polarity_cnfizer import PolarityCNFizer
-from theorydd._utils import SAT, UNSAT
+from theorydd.constants import SAT, UNSAT
 
 
 def _allsat_callback(model, converter, models):

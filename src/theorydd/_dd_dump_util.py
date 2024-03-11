@@ -4,12 +4,7 @@ import re
 import pydot
 from pysmt.formula import FNode
 from theorydd._utils import get_string_from_atom as _get_string_from_atom
-
-BDD_DOT_LINE_REGEX = r'[\[]label="[a-z]*-[0-9]*"[]]'
-BDD_DOT_TRUE_LABEL = '[label="True-1"]'
-BDD_DOT_KEY_START_REGEX = r'"[a-z]*-[0-9]*"]'
-BDD_DOT_KEY_END_REGEX = r'-[0-9]*"]'
-BDD_DOT_REPLACE_REGEX = BDD_DOT_LINE_REGEX
+from theorydd.constants import *
 
 
 def change_bbd_dot_names(output_file, mapping):
@@ -37,12 +32,6 @@ def change_bbd_dot_names(output_file, mapping):
         print(dot_output, file=out)
 
 
-BDD_LINE_REGEX = r">[a-z]+&#45;[0-9]+</text>"
-BDD_KEY_START_REGEX = r"[a-z]+&#45;[0-9]+<"
-BDD_KEY_END_REGEX = r"&#45;[0-9]+<"
-BDD_REPLECE_REGEX = r">[a-z]+&#45;[0-9]+<"
-
-
 def change_svg_names(output_file, mapping):
     """Changes the names into the svg to match theory atoms' names"""
     svg_file = open(output_file, "r", encoding="utf8")
@@ -66,12 +55,6 @@ def change_svg_names(output_file, mapping):
     svg_file.close()
     with open(output_file, "w", encoding="utf8") as out:
         print(svg_output, file=out)
-
-
-VTREE_LINE_REGEX = r'n[0-9]+ [\[]label="[A-Z]+",fontname='
-VTREE_KEY_START_REGEX = r'[A-Z]+",fontname='
-VTREE_KEY_END_REGEX = r'",fontname='
-VTREE_REPLECE_REGEX = VTREE_KEY_START_REGEX
 
 
 def translate_vtree_vars(original_dot: str, mapping: dict[str, FNode]) -> str:
@@ -98,21 +81,6 @@ def translate_vtree_vars(original_dot: str, mapping: dict[str, FNode]) -> str:
 """
         )
     return result
-
-
-SDD_LINE_LEFT_REGEX = (
-    r'[\[]label= "<L>(&not;)?([A-Z]+|[0-9]+)[|]<R>(&#8869;|&#8868;)?",'
-)
-SDD_LINE_RIGHT_REGEX = r'[\[]label= "<L>[|]<R>(&not;)?([A-Z]+|[0-9]+)",'
-SDD_LINE_BOTH_REGEX = (
-    r'[\[]label= "<L>(&not;)?([A-Z]+|[0-9]+)[|]<R>(&not;)?([A-Z]+|[0-9]+)",'
-)
-SDD_KEY_START_LEFT_REGEX = r"([A-Z]+|[0-9]+)[|]"
-SDD_KEY_END_LEFT_REGEX = r"[|]<R>"
-SDD_KEY_START_RIGHT_REGEX = r'([A-Z]+|[0-9]+)",'
-SDD_KEY_END_RIGHT_REGEX = r'",'
-SDD_REPLACE_LEFT_REGEX = SDD_KEY_START_LEFT_REGEX
-SDD_REPLACE_RIGHT_REGEX = SDD_KEY_START_RIGHT_REGEX
 
 
 def translate_sdd_vars(original_dot: str, mapping: dict[str, FNode]) -> str:

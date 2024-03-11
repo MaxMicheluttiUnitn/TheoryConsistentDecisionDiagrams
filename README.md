@@ -1,1 +1,1 @@
-# Theory Decision Diagrams
+# Theory Consistent Decision Diagrams

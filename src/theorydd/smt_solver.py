@@ -5,7 +5,7 @@ from pysmt.shortcuts import Solver, Iff
 from pysmt.fnode import FNode
 import mathsat
 
-from theorydd._utils import SAT, UNSAT
+from theorydd.constants import SAT, UNSAT
 
 
 def _allsat_callback(model, converter, models):
