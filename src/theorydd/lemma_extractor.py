@@ -57,7 +57,7 @@ def extract(
 def find_qvars(
     original_phi, phi_and_lemmas, computation_logger: Dict = None, verbose: bool = False
 ):
-    """Finds the atoms on which to existentially quantify (the fresh T-atoms from T-lemmas)
+    """Finds the atoms on which to existentially quantify when building a T-DD (the fresh T-atoms from T-lemmas)
 
     Args:
         original_phi (FNode): a pysmt formulas without integrated lemmas

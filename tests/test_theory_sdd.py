@@ -79,6 +79,7 @@ def test_init_unsat_formula():
     assert tsdd.count_nodes() == 1, "TSDD is only False node"
     assert tsdd.count_models() == 0, "TSDD should have no models"
 
+
 def test_init_tautology():
     """tests SDD generation"""
     phi = Or(
@@ -89,11 +90,14 @@ def test_init_tautology():
     partial.check_all_sat(phi, None)
     tsdd = TheorySDD(phi, "partial")
     assert tsdd.count_nodes() == 1, "TSDD is only True node"
-    assert tsdd.count_models() == 2, "TSDD should have 2 models (atom True and atom false)"
+    assert (
+        tsdd.count_models() == 2
+    ), "TSDD should have 2 models (atom True and atom false)"
+
 
 def test_one_variable():
     """tests SDD generation"""
-    phi = LT(Symbol("a",REAL),Symbol("b",REAL))
-    tsdd = TheorySDD(phi,"partial")
+    phi = LT(Symbol("a", REAL), Symbol("b", REAL))
+    tsdd = TheorySDD(phi, "partial")
     assert tsdd.count_nodes() <= 1, "TSDD is only True node"
     assert tsdd.count_models() == 1, "TSDD should have 1 model (atom True)"
