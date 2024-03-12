@@ -28,7 +28,7 @@ class TheoryBDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str = "total",
+        solver: str = "partial",
         load_lemmas: str | None = None,
         tlemmas: List[FNode] = None,
         computation_logger: Dict = None,
@@ -61,17 +61,13 @@ class TheoryBDD:
             phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         else:
             computation_logger["T-BDD"]["ALL SMT mode"] = "computed"
-            satisfiability, tlemmas = extract(
+            _satisfiability, tlemmas = extract(
                 phi,
                 smt_solver,
                 verbose=verbose,
                 computation_logger=computation_logger["T-BDD"],
             )
-            if satisfiability == SAT:
-                phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
-            else:
-                phi = formula.bottom()
-                phi_and_lemmas = phi
+            phi_and_lemmas = formula.get_phi_and_lemmas(phi,tlemmas)
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
@@ -96,7 +92,8 @@ class TheoryBDD:
 
         # BUILDING ACTUAL BDD
         start_time = time.time()
-        print("Building T-BDD...")
+        if verbose:
+            print("Building T-BDD...")
         self.bdd = cudd_bdd.BDD()
         appended_values = set()
         mapped_qvars = [self.mapping[atom] for atom in self.qvars]
@@ -114,7 +111,8 @@ class TheoryBDD:
         walker = BDDWalker(self.mapping, self.bdd)
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
-        print("BDD for phi built in ", elapsed_time, " seconds")
+        if verbose:
+            print("BDD for phi built in ", elapsed_time, " seconds")
         computation_logger["T-BDD"]["DD building time"] = elapsed_time
 
         # ENUMERATING OVER FRESH T-ATOMS

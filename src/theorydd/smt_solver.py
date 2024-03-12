@@ -20,7 +20,7 @@ class SMTSolver:
     def __init__(self) -> None:
         solver_options_dict = {
             "dpll.allsat_minimize_model": "false",  # - total truth assignments
-            # "dpll.allsat_allow_duplicates": "false", # - to prodi ce not necessarily disjoint truth assignments.
+            # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
             "preprocessor.toplevel_propagation": "false",
@@ -39,8 +39,12 @@ class SMTSolver:
     ) -> bool:
         """computes All-SAT for the SMT-formula phi"""
         self._last_phi = phi
+        self._tlemmas = []
+        self._models = []
+        self._atoms = []
 
         self._atoms = phi.get_atoms()
+        self.solver.reset_assertions()
         self.solver.add_assertion(phi)
 
         if boolean_mapping is not None:

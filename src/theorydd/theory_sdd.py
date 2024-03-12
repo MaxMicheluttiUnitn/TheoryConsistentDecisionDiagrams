@@ -32,14 +32,14 @@ class TheorySDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str = "total",
+        solver: str = "partial",
         computation_logger: Dict = None,
         verbose: bool = False,
         load_lemmas: str | None = None,
         tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
     ) -> None:
-        if not vtree_type in VALID_VTREE:
+        if vtree_type not in VALID_VTREE:
             raise InvalidVTreeException("Invalid V-Tree type \""+str(vtree_type)+"\".\n Valid V-Tree types: "+str(VALID_VTREE))
         if computation_logger is None:
             computation_logger = {}
@@ -63,27 +63,23 @@ class TheorySDD:
             computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
             phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         elif load_lemmas is not None:
-            computation_logger["T-BDD"]["ALL SMT mode"] = "loaded"
+            computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
             tlemmas = formula.read_phi(load_lemmas)
             phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         else:
-            computation_logger["T-BDD"]["ALL SMT mode"] = "computed"
-            satisfiability, tlemmas = extract(
+            computation_logger["T-SDD"]["ALL SMT mode"] = "computed"
+            _satisfiability, tlemmas = extract(
                 phi,
                 smt_solver,
                 verbose=verbose,
-                computation_logger=computation_logger["T-BDD"],
+                computation_logger=computation_logger["T-SDD"],
             )
-            if satisfiability == SAT:
-                phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
-            else:
-                phi = formula.bottom()
-                phi_and_lemmas = phi
+            phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
             verbose=verbose,
-            computation_logger=computation_logger["T-BDD"],
+            computation_logger=computation_logger["T-SDD"],
         )
         phi = phi_and_lemmas
 
@@ -136,7 +132,8 @@ class TheorySDD:
 
         # QUANTIFYING OVER FRESH T-ATOMS
         start_time = time.time()
-        print("Quantifying over fresh T-atoms...")
+        if verbose:
+            print("Quantifying over fresh T-atoms...")
         existential_map = [0]
         for smt_atom in atom_literal_map.keys():
             if smt_atom in self.qvars:
@@ -145,11 +142,12 @@ class TheorySDD:
                 existential_map.append(0)
         self.root = self.manager.exists_multiple(array("i", existential_map), self.root)
         elapsed_time = time.time() - start_time
-        print("Quantified over fresh T-atoms in ", elapsed_time, " seconds")
+        if verbose:
+            print("Quantified over fresh T-atoms in ", elapsed_time, " seconds")
         computation_logger["T-SDD"]["fresh T-atoms quantification time"] = elapsed_time
 
     def __len__(self) -> int:
-        return self.root.count()
+        return max(self.root.count(),1)
 
     def count_nodes(self) -> int:
         """returns the number of nodes in the T-SDD"""

@@ -1,7 +1,5 @@
 """this module handles interactions with the mathsat solver"""
-
-from ast import Dict
-from typing import List
+from typing import List, Dict
 from pysmt.shortcuts import Solver, And
 from pysmt.fnode import FNode
 import mathsat
@@ -54,9 +52,14 @@ class PartialSMTSolver:
             boolean_mapping = None
 
         self._last_phi = phi
+        self._tlemmas = []
+        self._models = []
+        self._atoms = []
 
         self._atoms = phi.get_atoms()
 
+        self.solver.reset_assertions()
+        self.solver_total.reset_assertions()
         phi = PolarityCNFizer(nnf=True, mutex_nnf_labels=True).convert_as_formula(phi)
         self.solver.add_assertion(phi)
 

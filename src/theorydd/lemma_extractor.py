@@ -10,13 +10,25 @@ from theorydd.constants import SAT, UNSAT
 
 
 def extract(
-    phi,
+    phi: FNode,
     smt_solver: SMTSolver | PartialSMTSolver,
     verbose: bool = False,
     use_boolean_mapping: bool = True,
     computation_logger: Dict = None,
 ) -> Tuple[int, List[FNode]]:
-    """extract lemmas from a SMT-formula"""
+    """extract lemmas from a SMT-formula
+
+    Args:
+        phi (FNode): a pysmt formula
+        smt_solver (SMTSolver | PartialSMTSolver): the SMT solver to be used for lemma extraction
+        verbose (bool) [False]: if set to True the function will log its computation
+        use_boolean_mapping (bool) [False]: optional for SMTSolver
+        computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+
+    Returns:
+        bool: SAT or UNSAT depnding on SMT-solver output
+        List[FNode]: the list of lemmas extracted from phi. If phi is UNSAT this list is contains the lemmas that give T-unsatisfiability
+    """
     if computation_logger is None:
         computation_logger = {}
     boolean_mapping = None
@@ -30,7 +42,8 @@ def extract(
             print("Phi is UNSAT")
         computation_logger["All-SAT computation time"] = elapsed_time
         computation_logger["All SMT result"] = "UNSAT"
-        return UNSAT, []
+        lemmas = smt_solver.get_theory_lemmas()
+        return UNSAT, lemmas
     elapsed_time = time.time() - start_time
     if verbose:
         print("Computed All Sat in ", elapsed_time, " seconds")
@@ -44,7 +57,16 @@ def extract(
 def find_qvars(
     original_phi, phi_and_lemmas, computation_logger: Dict = None, verbose: bool = False
 ):
-    """finds the atoms on which to existentially quantify"""
+    """Finds the atoms on which to existentially quantify (the fresh T-atoms from T-lemmas)
+
+    Args:
+        original_phi (FNode): a pysmt formulas without integrated lemmas
+        phi_and_lemmas (FNode): the same pysmt formula as phi, but with integrated lemmas
+        computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+
+    Returns:
+        bool: True if the solver is valid, False otherwise
+    """
     if computation_logger is None:
         computation_logger = {}
     start_time = time.time()
