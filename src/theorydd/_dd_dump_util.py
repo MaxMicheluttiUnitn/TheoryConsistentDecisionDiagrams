@@ -8,7 +8,7 @@ from theorydd.constants import *
 
 
 def change_bbd_dot_names(output_file, mapping):
-    """changes the name in the dot file with the actual names of the atoms"""
+    """Changes the name in the dot file with the actual names of the atoms"""
     dot_file = open(output_file, "r", encoding="utf8")
     dot_lines = dot_file.readlines()
     dot_output = """"""
@@ -58,7 +58,7 @@ def change_svg_names(output_file, mapping):
 
 
 def translate_vtree_vars(original_dot: str, mapping: dict[str, FNode]) -> str:
-    """translates variables in the dot representation
+    """Translates variables in the dot representation
     of the VTree into their original names in phi"""
     result = """"""
     original_dot = original_dot.replace("width=.25", "width=.75")
@@ -84,7 +84,7 @@ def translate_vtree_vars(original_dot: str, mapping: dict[str, FNode]) -> str:
 
 
 def translate_sdd_vars(original_dot: str, mapping: dict[str, FNode]) -> str:
-    """translates variables in the dot representation of the SDD into their original names in phi"""
+    """Translates variables in the dot representation of the SDD into their original names in phi"""
     result = """"""
     original_dot = original_dot.replace("fixedsize=true", "fixedsize=false")
     for line in original_dot.splitlines():
@@ -153,7 +153,7 @@ def save_sdd_object(
     kind: str,
     dump_abstraction=False,
 ) -> bool:
-    """saves an SDD object on a file"""
+    """Saves an SDD object on a file"""
     dot_content = sdd_object.dot()
     if kind == "VTree":
         dot_content = translate_vtree_vars(dot_content, mapping)

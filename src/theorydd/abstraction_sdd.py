@@ -18,7 +18,7 @@ from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
 
 class AbstractionSDD:
     """Python class to generate and handle abstraction SDDs.
-    
+
     Abstraction SDDs are SDDs of the boolean abstraction of a normalized
     T-formula. They represent all the models of the abstraction
     of the formula i. e. all the truth assignments to boolean atoms and
@@ -113,7 +113,7 @@ class AbstractionSDD:
         computation_logger["SDD"]["DD building time"] = elapsed_time
 
     def __len__(self) -> int:
-        return max(self.root.count(),1)
+        return max(self.root.count(), 1)
 
     def count_nodes(self) -> int:
         """Returns the number of nodes in the AbstractionSDD"""
@@ -155,10 +155,10 @@ class AbstractionSDD:
         dump_abstraction: bool = False,
     ) -> None:
         """Save the AbstractionSDD on a file with Graphviz
-        
+
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping 
+            print_mapping (bool) [False]: set it to True to print the mapping
                 between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
@@ -172,6 +172,21 @@ class AbstractionSDD:
         ):
             print(
                 "SDD could not be saved: The file format of ",
+                output_file,
+                " is not supported",
+            )
+
+    def dump_vtree(self, output_file: str) -> None:
+        """Save the AbstractionSDD on a file with Graphviz
+
+        Args:
+            output_file (str): the path to the output file
+        """
+        if not _save_sdd_object(
+            self.vtree, output_file, self.name_to_atom_map, "VTree"
+        ):
+            print(
+                "V-Tree could not be saved: The file format of ",
                 output_file,
                 " is not supported",
             )

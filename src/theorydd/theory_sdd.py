@@ -19,9 +19,10 @@ from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
 from theorydd.constants import SAT, UNSAT, VALID_VTREE
 from theorydd.custom_exceptions import InvalidVTreeException
 
+
 class TheorySDD:
     """Class to generate and handle T-SDDs
-    
+
     T-SDDs are SDDs with a mixture of boolean atoms and T-atoms
     in which every enocded model represents a T-consistent truth
     assignment to the atoms of the encoded formula"""
@@ -43,26 +44,31 @@ class TheorySDD:
         tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
     ) -> None:
-        """Builds a T-SDD. The construction requires the 
+        """Builds a T-SDD. The construction requires the
         computation of All-SMT for the provided formula to
-        extract T-lemmas and the subsequent construction of 
+        extract T-lemmas and the subsequent construction of
         a SDD of phi & lemmas
 
         Args:
             phi (FNode) : a pysmt formula
             solver (str) ["partial"]: specifies which solver to use for All-SMT computation.
                 Valid solvers are "partial" and "total"
-            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas. 
+            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
-            tlemmas (List[Fnode]): use previously computed tlemmas. 
+            tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
-            vtree_type (str) ["balanced"]: used for Vtree generation. 
+            vtree_type (str) ["balanced"]: used for Vtree generation.
                 Available values in theorydd.constants.VALID_VTREE
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
         if vtree_type not in VALID_VTREE:
-            raise InvalidVTreeException("Invalid V-Tree type \""+str(vtree_type)+"\".\n Valid V-Tree types: "+str(VALID_VTREE))
+            raise InvalidVTreeException(
+                'Invalid V-Tree type "'
+                + str(vtree_type)
+                + '".\n Valid V-Tree types: '
+                + str(VALID_VTREE)
+            )
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("T-SDD") is None:
@@ -169,7 +175,7 @@ class TheorySDD:
         computation_logger["T-SDD"]["fresh T-atoms quantification time"] = elapsed_time
 
     def __len__(self) -> int:
-        return max(self.root.count(),1)
+        return max(self.root.count(), 1)
 
     def count_nodes(self) -> int:
         """Returns the number of nodes in the T-SDD"""
@@ -211,10 +217,10 @@ class TheorySDD:
         dump_abstraction: bool = False,
     ) -> None:
         """Save the T-SDD on a file with Graphviz
-        
+
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping 
+            print_mapping (bool) [False]: set it to True to print the mapping
                 between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
@@ -233,6 +239,21 @@ class TheorySDD:
         else:
             print(
                 "SDD could not be saved: The file format of ",
+                output_file,
+                " is not supported",
+            )
+
+    def dump_vtree(self, output_file: str) -> None:
+        """Save the AbstractionSDD on a file with Graphviz
+
+        Args:
+            output_file (str): the path to the output file
+        """
+        if not _save_sdd_object(
+            self.vtree, output_file, self.name_to_atom_map, "VTree"
+        ):
+            print(
+                "V-Tree could not be saved: The file format of ",
                 output_file,
                 " is not supported",
             )
