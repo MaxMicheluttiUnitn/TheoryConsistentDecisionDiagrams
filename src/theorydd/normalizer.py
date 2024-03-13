@@ -10,7 +10,7 @@ from theorydd.custom_exceptions import UnsupportedNodeException
 
 
 class NormalizerWalker(DagWalker):
-    '''A walker to normalize smt formulas'''
+    '''A walker to normalize smt formulas acccording to a converter'''
 
     def __init__(self, converter, env=None, invalidate_memoization=False):
         DagWalker.__init__(self, env, invalidate_memoization)

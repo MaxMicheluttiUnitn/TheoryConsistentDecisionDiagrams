@@ -1,11 +1,12 @@
 """this module handles interactions with the mathsat solver"""
 
 from typing import List, Dict
-from pysmt.shortcuts import Solver, Iff
+from pysmt.shortcuts import Solver, Iff, BOOL
 from pysmt.fnode import FNode
 import mathsat
 
 from theorydd.constants import SAT, UNSAT
+from theorydd.formula import get_symbols
 
 
 def _allsat_callback(model, converter, models):
@@ -37,7 +38,15 @@ class SMTSolver:
     def check_all_sat(
         self, phi: FNode, boolean_mapping: Dict[FNode, FNode] = None
     ) -> bool:
-        """computes All-SAT for the SMT-formula phi"""
+        """Computes All-SMT for the SMT-formula phi using total assignments
+        
+        Args:
+            phi (FNode): a pysmt formula
+            boolean_mapping (Dict[FNode, FNode]) [None]: a mapping to associate to
+                each T-atom (values) a fresh boolean variable (keys). If set, the enumeration 
+                happens only on these fresh boolean variables and the original boolean variables 
+                of the formula
+        """
         self._last_phi = phi
         self._tlemmas = []
         self._models = []
@@ -53,10 +62,12 @@ class SMTSolver:
 
         self._models = []
         if boolean_mapping is not None:
+            phi_symbols: List[FNode] = get_symbols(phi)
+            filter(lambda x: x.get_type() == BOOL,phi_symbols)
             mathsat.msat_all_sat(
                 self.solver.msat_env(),
                 # self.get_converted_atoms(atoms),
-                self.get_converted_atoms(list(boolean_mapping.keys())),
+                self.get_converted_atoms(list(boolean_mapping.keys())+phi_symbols),
                 callback=lambda model: _allsat_callback(
                     model, self._converter, self._models
                 ),

@@ -1,4 +1,4 @@
-'''this module defines custom exceptions for this project'''
+'''this module defines custom exceptions for this package'''
 
 
 class UnsupportedNodeException(Exception):

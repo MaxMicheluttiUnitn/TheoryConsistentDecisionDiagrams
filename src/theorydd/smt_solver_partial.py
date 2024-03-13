@@ -8,6 +8,7 @@ from theorydd.constants import SAT, UNSAT
 
 
 def _allsat_callback(model, converter, models):
+    """callback for all-sat"""
     py_model = {converter.back(v) for v in model}
     models.append(py_model)
     return 1
@@ -47,7 +48,12 @@ class PartialSMTSolver:
     def check_all_sat(
         self, phi: FNode, boolean_mapping: Dict[FNode, FNode] = None
     ) -> bool:
-        """computes All-SMT for the SMT-formula phi using partial assignment and Tsetsin CNF-ization"""
+        """Computes All-SMT for the SMT-formula phi using partial assignment and Tsetsin CNF-ization
+        
+        Args:
+            phi (FNode): a pysmt formula
+            boolean_mapping (Dict[FNode, FNode]) [None]: unused, for compatibility with SMTSolver
+        """
         if boolean_mapping is not None:
             boolean_mapping = None
 

@@ -11,12 +11,23 @@ from theorydd.custom_exceptions import UnsupportedSymbolException
 
 
 class TheoryXSDD:
-    """class to build and handle XSDDs"""
+    """Class to build and handle XSDDs
+    
+    XSDD are T-DDs specifically made for WMI. They
+    are an extension of XSDD and the theory is only
+    applied when performin weighted model integration"""
 
     domain: Domain
     support: FNode
 
     def __init__(self, phi: FNode, computation_logger: Dict = None):
+        """
+        Builds an XSDD for phi
+        
+        Args:
+            phi (FNode): a pysmt formula
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+        """
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("XSDD") is None:

@@ -4,9 +4,9 @@
 
 VALID_VTREE = ["left", "right", "balanced", "vertical", "random"]
 
-VALID_LDD_THEORY = ["TVPI","TVPIZ","UTVPIZ","BOX","BOXZ"]
+VALID_LDD_THEORY = ["TVPI", "TVPIZ", "UTVPIZ", "BOX", "BOXZ"]
 
-VALID_SOLVER = ["partial","total"]
+VALID_SOLVER = ["partial", "total"]
 
 # SAT / UNSAT
 

@@ -20,7 +20,11 @@ from theorydd.constants import SAT, UNSAT, VALID_VTREE
 from theorydd.custom_exceptions import InvalidVTreeException
 
 class TheorySDD:
-    """class to generate and handle T-SDDs"""
+    """Class to generate and handle T-SDDs
+    
+    T-SDDs are SDDs with a mixture of boolean atoms and T-atoms
+    in which every enocded model represents a T-consistent truth
+    assignment to the atoms of the encoded formula"""
 
     SDD: SddManager
     root: SddNode
@@ -39,6 +43,24 @@ class TheorySDD:
         tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
     ) -> None:
+        """Builds a T-SDD. The construction requires the 
+        computation of All-SMT for the provided formula to
+        extract T-lemmas and the subsequent construction of 
+        a SDD of phi & lemmas
+
+        Args:
+            phi (FNode) : a pysmt formula
+            solver (str) ["partial"]: specifies which solver to use for All-SMT computation.
+                Valid solvers are "partial" and "total"
+            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas. 
+                This skips the All-SMT computation
+            tlemmas (List[Fnode]): use previously computed tlemmas. 
+                This skips the All-SMT computation
+            vtree_type (str) ["balanced"]: used for Vtree generation. 
+                Available values in theorydd.constants.VALID_VTREE
+            verbose (bool) [False]: set it to True to log computation on stdout
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+        """
         if vtree_type not in VALID_VTREE:
             raise InvalidVTreeException("Invalid V-Tree type \""+str(vtree_type)+"\".\n Valid V-Tree types: "+str(VALID_VTREE))
         if computation_logger is None:
@@ -150,11 +172,11 @@ class TheorySDD:
         return max(self.root.count(),1)
 
     def count_nodes(self) -> int:
-        """returns the number of nodes in the T-SDD"""
+        """Returns the number of nodes in the T-SDD"""
         return len(self)
 
     def count_vertices(self) -> int:
-        """returns the number of nodes in the T-SDD"""
+        """Returns the number of nodes in the T-SDD"""
         if self.root.is_true() or not self.root.is_decision():
             return 0
         else:
@@ -178,7 +200,7 @@ class TheorySDD:
             return total_edges
 
     def count_models(self) -> int:
-        """returns the amount of models in the T-SDD"""
+        """Returns the amount of models in the T-SDD"""
         wmc: WmcManager = self.root.wmc(log_mode=False)
         return wmc.propagate() / (2 ** len(self.qvars))
 
@@ -188,7 +210,16 @@ class TheorySDD:
         print_mapping: bool = True,
         dump_abstraction: bool = False,
     ) -> None:
-        """save the DD on a file with graphviz"""
+        """Save the T-SDD on a file with Graphviz
+        
+        Args:
+            output_file (str): the path to the output file
+            print_mapping (bool) [False]: set it to True to print the mapping 
+                between the names of the atoms in the DD and the original atoms
+            dump_abstraction (bool) [False]: set it to True to dump a DD
+                with the names of the abstraction of the atoms instead of the
+                full names of atoms
+        """
         start_time = time.time()
         print("Saving SDD...")
         if print_mapping:

@@ -14,9 +14,15 @@ from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
 
-
 class AbstractionBDD:
-    """class to generate and handle abstraction BDDs"""
+    """Python class to generate and handle abstraction BDDs.
+    
+    Abstraction BDDs are BDDs of the boolean abstraction of a normalized
+    T-formula. They represent all the models of the abstraction
+    of the formula i. e. all the truth assignments to boolean atoms and
+    T-atoms that satisfy the formula in the boolean domain. These
+    BDDs may however present T-inconsistencies.
+    """
 
     bdd: cudd_bdd.BDD
     root: cudd_bdd.Function
@@ -29,6 +35,15 @@ class AbstractionBDD:
         computation_logger: Dict = None,
         verbose: bool = False,
     ) -> None:
+        """
+        builds an AbstractionBDD
+
+        Args:
+            phi (FNode): a pysmt formula
+            solver (str) ["partial"]: used for T-atoms normalization, can be set to total or partial
+            verbose (bool) [False]: set it to True to log computation on stdout
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+        """
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("BDD") is None:
@@ -62,7 +77,8 @@ class AbstractionBDD:
 
         # BUILDING ACTUAL BDD
         start_time = time.time()
-        print("Building BDD...")
+        if verbose:
+            print("Building BDD...")
         self.bdd = cudd_bdd.BDD()
         appended_values = set()
         all_values = []
@@ -77,22 +93,23 @@ class AbstractionBDD:
         walker = BDDWalker(self.mapping, self.bdd)
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
-        print("BDD for phi built in ", elapsed_time, " seconds")
+        if verbose:
+            print("BDD for phi built in ", elapsed_time, " seconds")
         computation_logger["BDD"]["DD building time"] = elapsed_time
 
     def __len__(self) -> int:
         return len(self.root)
 
     def count_nodes(self) -> int:
-        """returns the number of nodes in the T-BDD"""
+        """Returns the number of nodes in the Abstraction-BDD"""
         return len(self)
 
     def count_vertices(self) -> int:
-        """returns the number of nodes in the T-BDD"""
+        """Returns the number of nodes in the Abstraction-BDD"""
         return len(self) * 2
 
     def count_models(self) -> int:
-        """returns the amount of models in the T-BDD"""
+        """Returns the amount of models in the Abstraction-BDD"""
         return self.root.count(nvars=len(self.mapping.keys()))
 
     def dump(
@@ -101,7 +118,16 @@ class AbstractionBDD:
         print_mapping: bool = True,
         dump_abstraction: bool = False,
     ) -> None:
-        """save the DD on a file with graphviz"""
+        """Save the AbstractionBDD on a file with Graphviz
+        
+        Args:
+            output_file (str): the path to the output file
+            print_mapping (bool) [False]: set it to True to print the mapping 
+                between the names of the atoms in the DD and the original atoms
+            dump_abstraction (bool) [False]: set it to True to dump a DD
+                with the names of the abstraction of the atoms instead of the
+                full names of atoms
+        """
         temporary_dot = "bdd_temporary_dot.dot"
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
         if print_mapping:

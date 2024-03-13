@@ -18,7 +18,11 @@ from theorydd.constants import SAT, UNSAT
 
 
 class TheoryBDD:
-    """class to generate and handle T-BDDs"""
+    """Class to generate and handle T-BDDs
+    
+    TBDDs are BDDs with a mixture of boolean atoms and T-atoms
+    in which every branch represents a T-consistent truth
+    assignment to the atoms of the encoded formula"""
 
     bdd: cudd_bdd.BDD
     root: cudd_bdd.Function
@@ -34,6 +38,22 @@ class TheoryBDD:
         computation_logger: Dict = None,
         verbose: bool = False,
     ) -> None:
+        """Builds a T-BDD. The construction requires the 
+        computation of All-SMT for the provided formula to
+        extract T-lemmas and the subsequent construction of 
+        a BDD of phi & lemmas
+
+        Args:
+            phi (FNode) : a pysmt formula
+            solver (str) ["partial"]: specifies which solver to use for All-SMT computation.
+                Valid solvers are "partial" and "total"
+            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas. 
+                This skips the All-SMT computation
+            tlemmas (List[Fnode]): use previously computed tlemmas. 
+                This skips the All-SMT computation
+            verbose (bool) [False]: set it to True to log computation on stdout
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+        """
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("T-BDD") is None:
@@ -151,7 +171,16 @@ class TheoryBDD:
         print_mapping: bool = True,
         dump_abstraction: bool = False,
     ) -> None:
-        """save the DD on a file with graphviz"""
+        """Save the T-SDD on a file with Graphviz
+        
+        Args:
+            output_file (str): the path to the output file
+            print_mapping (bool) [False]: set it to True to print the mapping 
+                between the names of the atoms in the DD and the original atoms
+            dump_abstraction (bool) [False]: set it to True to dump a DD
+                with the names of the abstraction of the atoms instead of the
+                full names of atoms
+        """
         temporary_dot = "bdd_temporary_dot.dot"
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
         if print_mapping:

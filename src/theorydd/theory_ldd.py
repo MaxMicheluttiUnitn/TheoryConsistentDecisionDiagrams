@@ -17,7 +17,12 @@ from theorydd._string_generator import SequentialStringGenerator
 
 
 class TheoryLDD:
-    """class to handle LDDs. Wrapper to @masinag's dd which allows compatibility with pysmt FNodes"""
+    """Class to handle LDDs. Uses @masinag's dd and
+    allows compatibility with pysmt FNodes
+    
+    LDD are T-DDs available only for some specific theories:
+    TVPI, TVPIZ, UTVPIZ, BOX, BOXZ
+    """
 
     manager: _ldd.LDD
     root: _ldd.Formula
@@ -30,10 +35,32 @@ class TheoryLDD:
         verbose: bool = False,
         computation_logger: Dict = None,
     ):
+        """Builds a LDD for phi
+        
+        Args:
+            phi (FNode): a pysmt T-formula of the specified theory
+            theory (str): the theory of the T-atoms of phi
+            verbose (bool) [False]: set it to True to log computation on stdout
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+            """
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("LDD") is None:
             computation_logger["LDD"] = {}
+
+        # CHECKING THEORY
+        if theory == "UTVPI":
+            ldd_theory = _ldd.TVPI
+        elif theory == "TVPIZ":
+            ldd_theory = _ldd.TVPIZ
+        elif theory == "UTVPIZ":
+            ldd_theory = _ldd.UTVPIZ
+        elif theory == "BOX":
+            ldd_theory = _ldd.BOX
+        elif theory == "BOXZ":
+            ldd_theory = _ldd.BOXZ
+        else:
+            raise InvalidLDDTheoryException("Invalid theory " + theory)
 
         # FINDING VARS
         start_time = time.time()
@@ -56,18 +83,6 @@ class TheoryLDD:
                 int_ctr += 1
             else:
                 raise UnsupportedSymbolException(str(s))
-        if theory == "UTVPI":
-            ldd_theory = _ldd.TVPI
-        elif theory == "TVPIZ":
-            ldd_theory = _ldd.TVPIZ
-        elif theory == "UTVPIZ":
-            ldd_theory = _ldd.UTVPIZ
-        elif theory == "BOX":
-            ldd_theory = _ldd.BOX
-        elif theory == "BOXZ":
-            ldd_theory = _ldd.BOXZ
-        else:
-            raise InvalidLDDTheoryException("Invalid theory " + theory)
 
         # BUILDING LDD
         # LDD(Id theory,#int vars,#bool vars)
@@ -85,17 +100,21 @@ class TheoryLDD:
         return len(self.root)
 
     def count_nodes(self) -> int:
-        """returns the number of nodes in the T-SDD"""
+        """Returns the number of nodes in the T-SDD"""
         return len(self)
 
     def count_vertices(self) -> int:
-        """returns the number of nodes in the T-SDD"""
+        """Returns the number of nodes in the T-SDD"""
         return 2 * len(self)
 
     def count_models(self) -> int:
-        """returns the amount of models in the T-SDD"""
+        """Returns the amount of models in the T-SDD"""
         return self.root.count(nvars=self.total_atoms)
 
     def dump(self, output_file: str) -> None:
-        """save the DD on a file with graphviz"""
+        """Save the LDD on a file with Graphviz
+
+        Args:
+            output_file (str): the path to the output file
+        """
         self.manager.dump(output_file, [self.root])
