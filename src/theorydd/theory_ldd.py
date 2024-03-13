@@ -1,7 +1,7 @@
 """module to handle LDDs"""
 
 import time
-from typing import Dict
+from typing import Any, Dict
 
 from pysmt.shortcuts import BOOL, INT, REAL
 from pysmt.fnode import FNode
@@ -25,7 +25,7 @@ class TheoryLDD:
     """
 
     manager: _ldd.LDD
-    root: _ldd.Formula
+    root: Any
     total_atoms: int
 
     def __init__(

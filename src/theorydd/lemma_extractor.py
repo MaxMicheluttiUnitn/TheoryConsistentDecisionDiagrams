@@ -40,15 +40,16 @@ def extract(
         if verbose:
             print("Computed All Sat in ", elapsed_time, " seconds")
             print("Phi is UNSAT")
-        computation_logger["All-SAT computation time"] = elapsed_time
-        computation_logger["All SMT result"] = "UNSAT"
+        computation_logger["All-SMT computation time"] = elapsed_time
+        computation_logger["All-SMT result"] = "UNSAT"
         lemmas = smt_solver.get_theory_lemmas()
         return UNSAT, lemmas
     elapsed_time = time.time() - start_time
     if verbose:
         print("Computed All Sat in ", elapsed_time, " seconds")
         print("Phi is T-SAT")
-    computation_logger["All-SAT computation time"] = elapsed_time
+    computation_logger["All-SMT computation time"] = elapsed_time
+    computation_logger["All-SMT result"] = "SAT"
     lemmas = smt_solver.get_theory_lemmas()
     computation_logger["T-lemmas amount"] = len(lemmas)
     return SAT, lemmas
