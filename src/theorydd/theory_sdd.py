@@ -37,7 +37,7 @@ class TheorySDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str = "partial",
+        solver: str | SMTSolver | PartialSMTSolver= "partial",
         computation_logger: Dict = None,
         verbose: bool = False,
         load_lemmas: str | None = None,
@@ -51,8 +51,8 @@ class TheorySDD:
 
         Args:
             phi (FNode) : a pysmt formula
-            solver (str) ["partial"]: specifies which solver to use for All-SMT computation.
-                Valid solvers are "partial" and "total"
+            solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
+                Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
             load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
@@ -76,10 +76,13 @@ class TheorySDD:
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
-        if solver == "total":
-            smt_solver = SMTSolver()
+        if isinstance(solver,str):
+            if solver == "total":
+                smt_solver = SMTSolver()
+            else:
+                smt_solver = PartialSMTSolver()
         else:
-            smt_solver = PartialSMTSolver()
+            smt_solver = solver
         phi = formula.get_normalized(phi, smt_solver.get_converter())
         elapsed_time = time.time() - start_time
         if verbose:
