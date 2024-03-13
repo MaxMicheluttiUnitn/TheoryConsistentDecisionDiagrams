@@ -46,8 +46,8 @@ class AbstractionBDD:
         """
         if computation_logger is None:
             computation_logger = {}
-        if computation_logger.get("BDD") is None:
-            computation_logger["BDD"] = {}
+        if computation_logger.get("Abstraction BDD") is None:
+            computation_logger["Abstraction BDD"] = {}
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
@@ -59,7 +59,7 @@ class AbstractionBDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("Phi was normalized in ", elapsed_time, " seconds")
-        computation_logger["BDD"]["phi normalization time"] = elapsed_time
+        computation_logger["Abstraction BDD"]["phi normalization time"] = elapsed_time
 
         # CREATING VARIABLE MAPPING
         start_time = time.time()
@@ -73,12 +73,12 @@ class AbstractionBDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("Mapping created in ", elapsed_time, " seconds")
-        computation_logger["BDD"]["variable mapping creation time"] = elapsed_time
+        computation_logger["Abstraction BDD"]["variable mapping creation time"] = elapsed_time
 
         # BUILDING ACTUAL BDD
         start_time = time.time()
         if verbose:
-            print("Building BDD...")
+            print("Building Abstraction BDD...")
         self.bdd = cudd_bdd.BDD()
         appended_values = set()
         all_values = []
@@ -94,8 +94,8 @@ class AbstractionBDD:
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
         if verbose:
-            print("BDD for phi built in ", elapsed_time, " seconds")
-        computation_logger["BDD"]["DD building time"] = elapsed_time
+            print("Abstraction BDD for phi built in ", elapsed_time, " seconds")
+        computation_logger["Abstraction BDD"]["DD building time"] = elapsed_time
 
     def __len__(self) -> int:
         return len(self.root)

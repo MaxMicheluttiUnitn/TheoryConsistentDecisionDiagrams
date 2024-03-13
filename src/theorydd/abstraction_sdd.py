@@ -52,8 +52,8 @@ class AbstractionSDD:
         """
         if computation_logger is None:
             computation_logger = {}
-        if computation_logger.get("SDD") is None:
-            computation_logger["SDD"] = {}
+        if computation_logger.get("Abstraction SDD") is None:
+            computation_logger["Abstraction SDD"] = {}
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
@@ -65,7 +65,7 @@ class AbstractionSDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("Phi was normalized in ", elapsed_time, " seconds")
-        computation_logger["SDD"]["phi normalization time"] = elapsed_time
+        computation_logger["Abstraction SDD"]["phi normalization time"] = elapsed_time
 
         # CREATING VARIABLE MAPPING
         start_time = time.time()
@@ -79,7 +79,7 @@ class AbstractionSDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("Mapping created in ", elapsed_time, " seconds")
-        computation_logger["SDD"]["variable mapping creation time"] = elapsed_time
+        computation_logger["Abstraction SDD"]["variable mapping creation time"] = elapsed_time
 
         # BUILDING V-TREE
         start_time = time.time()
@@ -96,12 +96,12 @@ class AbstractionSDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("V-Tree built in ", elapsed_time, " seconds")
-        computation_logger["SDD"]["V-Tree building time"] = elapsed_time
+        computation_logger["Abstraction SDD"]["V-Tree building time"] = elapsed_time
 
         # BUILDING SDD WITH WALKER
         start_time = time.time()
         if verbose:
-            print("Building SDD...")
+            print("Building Abstraction SDD...")
         self.manager = SddManager.from_vtree(self.vtree)
         sdd_literals = [self.manager.literal(i) for i in range(1, var_count + 1)]
         atom_literal_map = dict(zip(atoms, sdd_literals))
@@ -109,8 +109,8 @@ class AbstractionSDD:
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
         if verbose:
-            print("SDD built in ", elapsed_time, " seconds")
-        computation_logger["SDD"]["DD building time"] = elapsed_time
+            print("Abstraction SDD built in ", elapsed_time, " seconds")
+        computation_logger["Abstraction SDD"]["DD building time"] = elapsed_time
 
     def __len__(self) -> int:
         return max(self.root.count(), 1)
