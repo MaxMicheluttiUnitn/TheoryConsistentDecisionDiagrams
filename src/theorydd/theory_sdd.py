@@ -244,7 +244,7 @@ class TheorySDD:
             )
 
     def dump_vtree(self, output_file: str) -> None:
-        """Save the AbstractionSDD on a file with Graphviz
+        """Save the T-SDD on a file with Graphviz
 
         Args:
             output_file (str): the path to the output file
