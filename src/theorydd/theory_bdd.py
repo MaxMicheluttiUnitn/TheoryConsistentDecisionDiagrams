@@ -19,7 +19,7 @@ from theorydd.constants import SAT, UNSAT
 
 class TheoryBDD:
     """Class to generate and handle T-BDDs
-    
+
     TBDDs are BDDs with a mixture of boolean atoms and T-atoms
     in which every branch represents a T-consistent truth
     assignment to the atoms of the encoded formula"""
@@ -38,18 +38,18 @@ class TheoryBDD:
         computation_logger: Dict = None,
         verbose: bool = False,
     ) -> None:
-        """Builds a T-BDD. The construction requires the 
+        """Builds a T-BDD. The construction requires the
         computation of All-SMT for the provided formula to
-        extract T-lemmas and the subsequent construction of 
+        extract T-lemmas and the subsequent construction of
         a BDD of phi & lemmas
 
         Args:
             phi (FNode) : a pysmt formula
             solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
                 Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
-            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas. 
+            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
-            tlemmas (List[Fnode]): use previously computed tlemmas. 
+            tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
@@ -61,7 +61,7 @@ class TheoryBDD:
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
-        if isinstance(solver,str):
+        if isinstance(solver, str):
             if solver == "total":
                 smt_solver = SMTSolver()
             else:
@@ -90,7 +90,7 @@ class TheoryBDD:
                 verbose=verbose,
                 computation_logger=computation_logger["T-BDD"],
             )
-            phi_and_lemmas = formula.get_phi_and_lemmas(phi,tlemmas)
+            phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
@@ -175,10 +175,10 @@ class TheoryBDD:
         dump_abstraction: bool = False,
     ) -> None:
         """Save the T-SDD on a file with Graphviz
-        
+
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping 
+            print_mapping (bool) [False]: set it to True to print the mapping
                 between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
@@ -204,3 +204,7 @@ class TheoryBDD:
         else:
             print("Unable to dump T-BDD file: format not unsupported")
             return
+
+    def get_mapping(self) -> Dict:
+        """Returns the variable mapping used"""
+        return self.mapping

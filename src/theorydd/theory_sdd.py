@@ -37,7 +37,7 @@ class TheorySDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str | SMTSolver | PartialSMTSolver= "partial",
+        solver: str | SMTSolver | PartialSMTSolver = "partial",
         computation_logger: Dict = None,
         verbose: bool = False,
         load_lemmas: str | None = None,
@@ -76,7 +76,7 @@ class TheorySDD:
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
-        if isinstance(solver,str):
+        if isinstance(solver, str):
             if solver == "total":
                 smt_solver = SMTSolver()
             else:
@@ -260,3 +260,7 @@ class TheorySDD:
                 output_file,
                 " is not supported",
             )
+
+    def get_mapping(self) -> Dict:
+        """Returns the variable mapping used"""
+        return self.mapping
