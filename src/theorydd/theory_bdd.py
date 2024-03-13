@@ -86,7 +86,7 @@ class TheoryBDD:
             phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         else:
             computation_logger["T-BDD"]["ALL SMT mode"] = "computed"
-            _satisfiability, tlemmas = extract(
+            _satisfiability, tlemmas, _bm = extract(
                 phi,
                 smt_solver,
                 verbose=verbose,

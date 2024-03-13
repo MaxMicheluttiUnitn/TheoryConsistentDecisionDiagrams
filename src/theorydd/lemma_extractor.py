@@ -15,7 +15,7 @@ def extract(
     verbose: bool = False,
     use_boolean_mapping: bool = True,
     computation_logger: Dict = None,
-) -> Tuple[int, List[FNode]]:
+) -> Tuple[int, List[FNode], Dict | None]:
     """extract lemmas from a SMT-formula
 
     Args:
@@ -28,6 +28,7 @@ def extract(
     Returns:
         bool: SAT or UNSAT depnding on SMT-solver output
         List[FNode]: the list of lemmas extracted from phi. If phi is UNSAT this list is contains the lemmas that give T-unsatisfiability
+        Dict | None: when using a boolean mapping the boolean mapping used, otherwise None
     """
     if computation_logger is None:
         computation_logger = {}
@@ -43,7 +44,7 @@ def extract(
         computation_logger["All-SMT computation time"] = elapsed_time
         computation_logger["All-SMT result"] = "UNSAT"
         lemmas = smt_solver.get_theory_lemmas()
-        return UNSAT, lemmas
+        return UNSAT, lemmas, boolean_mapping
     elapsed_time = time.time() - start_time
     if verbose:
         print("Computed All Sat in ", elapsed_time, " seconds")
@@ -52,7 +53,7 @@ def extract(
     computation_logger["All-SMT result"] = "SAT"
     lemmas = smt_solver.get_theory_lemmas()
     computation_logger["T-lemmas amount"] = len(lemmas)
-    return SAT, lemmas
+    return SAT, lemmas, boolean_mapping
 
 
 def find_qvars(
