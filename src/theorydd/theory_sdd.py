@@ -16,8 +16,8 @@ from theorydd._string_generator import (
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
-from theorydd.constants import SAT, UNSAT, VALID_VTREE
-from theorydd.custom_exceptions import InvalidVTreeException
+from theorydd.constants import SAT, UNSAT, VALID_VTREE, VALID_SOLVER
+from theorydd.custom_exceptions import InvalidVTreeException, InvalidSolverException
 
 
 class TheorySDD:
@@ -77,6 +77,8 @@ class TheorySDD:
         if verbose:
             print("Normalizing phi according to solver...")
         if isinstance(solver, str):
+            if solver not in VALID_SOLVER:
+                raise InvalidSolverException(solver+" is not a valid solvers. Valid solvers: "+str(VALID_SOLVER))
             if solver == "total":
                 smt_solver = SMTSolver()
             else:

@@ -14,8 +14,8 @@ from theorydd._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd.lemma_extractor import extract, find_qvars
-from theorydd.constants import SAT, UNSAT
-
+from theorydd.constants import SAT, UNSAT, VALID_SOLVER
+from theorydd.custom_exceptions import InvalidSolverException
 
 class TheoryBDD:
     """Class to generate and handle T-BDDs
@@ -62,6 +62,8 @@ class TheoryBDD:
         if verbose:
             print("Normalizing phi according to solver...")
         if isinstance(solver, str):
+            if solver not in VALID_SOLVER:
+                raise InvalidSolverException(solver+" is not a valid solvers. Valid solvers: "+str(VALID_SOLVER))
             if solver == "total":
                 smt_solver = SMTSolver()
             else:
