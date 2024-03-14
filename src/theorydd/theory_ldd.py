@@ -19,7 +19,7 @@ from theorydd._string_generator import SequentialStringGenerator
 class TheoryLDD:
     """Class to handle LDDs. Uses @masinag's dd and
     allows compatibility with pysmt FNodes
-    
+
     LDD are T-DDs available only for some specific theories:
     TVPI, TVPIZ, UTVPIZ, BOX, BOXZ
     """
@@ -36,13 +36,13 @@ class TheoryLDD:
         computation_logger: Dict = None,
     ):
         """Builds a LDD for phi
-        
+
         Args:
             phi (FNode): a pysmt T-formula of the specified theory
             theory (str): the theory of the T-atoms of phi
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
-            """
+        """
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("LDD") is None:
@@ -109,7 +109,8 @@ class TheoryLDD:
 
     def count_models(self) -> int:
         """Returns the amount of models in the T-SDD"""
-        return self.root.count(nvars=self.total_atoms)
+        support_size = len(self.manager.vars)
+        return _recursive_mc(self.root, {}, self.manager, support_size)
 
     def dump(self, output_file: str) -> None:
         """Save the LDD on a file with Graphviz
@@ -118,3 +119,28 @@ class TheoryLDD:
             output_file (str): the path to the output file
         """
         self.manager.dump(output_file, [self.root])
+
+
+def _recursive_mc(node, memo: Dict, manager, support_size: int) -> int:
+    """recursive function for MC"""
+    if node == manager.true:
+        return 1
+    if node == manager.false:
+        return 0
+    if node not in memo.keys():
+        memo[node] = 0
+    if memo[node] > 0:
+        return memo[node]
+    i = node._index
+    if node.high == manager.true or node.high == manager.false:
+        i_1 = support_size
+    else:
+        i_1 = node.high._index
+    if node.low == manager.true or node.low == manager.false:
+        i_0 = support_size
+    else:
+        i_0 = node.low._index
+    memo[node] = (2 ** (i_1 - i - 1)) * _recursive_mc(
+        node.high, memo, manager, support_size
+    ) + (2 ** (i_0 - i - 1)) * _recursive_mc(node.low, memo, manager, support_size)
+    return memo[node]
