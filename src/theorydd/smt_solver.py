@@ -21,6 +21,7 @@ class SMTSolver:
     def __init__(self) -> None:
         solver_options_dict = {
             "dpll.allsat_minimize_model": "false",  # - total truth assignments
+            # "theory.pure_literal_filtering": "true",
             # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
