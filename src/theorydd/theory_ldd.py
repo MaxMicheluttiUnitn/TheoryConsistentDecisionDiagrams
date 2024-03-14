@@ -49,7 +49,7 @@ class TheoryLDD:
             computation_logger["LDD"] = {}
 
         # CHECKING THEORY
-        if theory == "UTVPI":
+        if theory == "TVPI":
             ldd_theory = _ldd.TVPI
         elif theory == "TVPIZ":
             ldd_theory = _ldd.TVPIZ
