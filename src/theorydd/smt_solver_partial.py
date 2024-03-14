@@ -91,10 +91,13 @@ class PartialSMTSolver:
         if len(partial_models) == 0:
             return UNSAT
 
+        self.solver_total.add_assertion(phi)
         self._models = []
         for m in partial_models:
             self.solver_total.push()
             self.solver_total.add_assertion(And(m))
+            # Theorylemmas added to solver total
+            self.solver_total.add_assertion(And(self._tlemmas))
             models_total = []
             mathsat.msat_all_sat(
                 self.solver_total.msat_env(),
