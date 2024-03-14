@@ -110,6 +110,10 @@ class TheoryLDD:
     def count_models(self) -> int:
         """Returns the amount of models in the T-SDD"""
         support_size = len(self.manager.vars)
+        if self.root == self.manager.true:
+            return 2**support_size
+        elif self.root == self.manager.false:
+            return 0
         return _recursive_mc(self.root, {}, self.manager, support_size)
 
     def dump(self, output_file: str) -> None:
