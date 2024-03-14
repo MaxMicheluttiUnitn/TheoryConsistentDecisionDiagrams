@@ -98,7 +98,7 @@ class TheorySDD:
         elif load_lemmas is not None:
             computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
             tlemmas = formula.read_phi(load_lemmas)
-            phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
+            phi_and_lemmas = formula.get_phi_and_lemmas(phi, [tlemmas])
         else:
             computation_logger["T-SDD"]["ALL SMT mode"] = "computed"
             _satisfiability, tlemmas, _bm = extract(

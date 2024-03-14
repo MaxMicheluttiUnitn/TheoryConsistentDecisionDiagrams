@@ -83,7 +83,7 @@ class TheoryBDD:
         elif load_lemmas is not None:
             computation_logger["T-BDD"]["ALL SMT mode"] = "loaded"
             tlemmas = formula.read_phi(load_lemmas)
-            phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
+            phi_and_lemmas = formula.get_phi_and_lemmas(phi, [tlemmas])
         else:
             computation_logger["T-BDD"]["ALL SMT mode"] = "computed"
             _satisfiability, tlemmas, _bm = extract(
@@ -145,7 +145,7 @@ class TheoryBDD:
             start_time = time.time()
             if verbose:
                 print("Enumerating over fresh T-atoms...")
-            root = cudd_bdd.and_exists(root, self.bdd.true, mapped_qvars)
+            self.root = cudd_bdd.and_exists(self.root, self.bdd.true, mapped_qvars)
             elapsed_time = time.time() - start_time
             if verbose:
                 print("T-BDD for phi built in ", elapsed_time, " seconds")

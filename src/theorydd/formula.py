@@ -67,7 +67,7 @@ def read_phi(filename: str) -> FNode:
     """
     # pylint: disable=unused-argument
     if not isinstance(filename,str):
-        raise TypeError("Expected str found "+type(filename))
+        raise TypeError("Expected str found "+str(type(filename)))
     other_phi = _read_smtlib(filename)
     return other_phi
 
@@ -80,7 +80,7 @@ def save_phi(phi: FNode, filename: str) -> None:
     """
     # pylint: disable=unused-argument
     if not isinstance(filename,str):
-        raise TypeError("Expected str found "+type(filename))
+        raise TypeError("Expected str found "+str(type(filename)))
     _write_smtlib(phi, filename)
 
 
@@ -94,7 +94,7 @@ def get_atoms(phi: FNode) -> List[FNode]:
         List[FNode]: the atoms in the formula
     """
     if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+type(phi))
+        raise TypeError("Expected FNode found "+str(type(phi)))
     return list(phi.get_atoms())
 
 
@@ -108,7 +108,7 @@ def get_symbols(phi: FNode) -> List[FNode]:
         List[FNode]: the symbols in the formula
     """
     if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+type(phi))
+        raise TypeError("Expected FNode found "+str(type(phi)))
     return list(phi.get_free_variables())
 
 
@@ -122,7 +122,7 @@ def get_normalized(phi: FNode, converter) -> FNode:
         FNode: the provided formula normalized according to the converter
     """
     if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+type(phi))
+        raise TypeError("Expected FNode found "+str(type(phi)))
     walker = NormalizerWalker(converter)
     return walker.walk(phi)
 
@@ -138,14 +138,14 @@ def get_phi_and_lemmas(phi: FNode, tlemmas: List[FNode]) -> FNode:
         FNode: the big and of phi and the lemmas
     """
     if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+type(phi))
+        raise TypeError("Expected FNode found "+str(type(phi)))
     if not isinstance(tlemmas,list):
-        raise TypeError("Expected List found "+type(tlemmas))
+        raise TypeError("Expected List found "+str(type(tlemmas)))
     if len(tlemmas) == 0:
         return phi
     for lemma in tlemmas:
         if not isinstance(lemma,FNode):
-            raise TypeError("Expected FNode found "+type(lemma))
+            raise TypeError("Expected FNode found "+str(type(lemma)))
     return _And(phi, *tlemmas)
 
 
