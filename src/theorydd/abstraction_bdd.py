@@ -115,7 +115,7 @@ class AbstractionBDD:
     def dump(
         self,
         output_file: str,
-        print_mapping: bool = True,
+        print_mapping: bool = False,
         dump_abstraction: bool = False,
     ) -> None:
         """Save the AbstractionBDD on a file with Graphviz

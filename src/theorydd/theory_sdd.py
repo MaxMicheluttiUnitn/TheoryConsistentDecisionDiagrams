@@ -218,7 +218,7 @@ class TheorySDD:
     def dump(
         self,
         output_file: str,
-        print_mapping: bool = True,
+        print_mapping: bool = False,
         dump_abstraction: bool = False,
     ) -> None:
         """Save the T-SDD on a file with Graphviz
