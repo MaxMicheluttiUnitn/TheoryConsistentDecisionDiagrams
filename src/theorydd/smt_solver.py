@@ -63,7 +63,7 @@ class SMTSolver:
         self._models = []
         if boolean_mapping is not None:
             phi_symbols: List[FNode] = get_symbols(phi)
-            filter(lambda x: x.get_type() == BOOL,phi_symbols)
+            phi_symbols = list(filter(lambda x: x.get_type() == BOOL,phi_symbols))
             mathsat.msat_all_sat(
                 self.solver.msat_env(),
                 # self.get_converted_atoms(atoms),
