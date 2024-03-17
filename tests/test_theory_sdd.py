@@ -1,10 +1,12 @@
 """tests for T-SDDS"""
-
 from copy import deepcopy
+
+import pytest
 from theorydd.theory_sdd import TheorySDD
 import theorydd.formula as formula
 from theorydd.smt_solver_partial import PartialSMTSolver
-from pysmt.shortcuts import Or, LT, REAL, Symbol, And, Not
+from theorydd.smt_solver import SMTSolver
+from pysmt.shortcuts import Or, LT, REAL, Symbol, And, Not, is_sat, Iff
 
 
 def test_init_default():
@@ -101,3 +103,95 @@ def test_one_variable():
     tsdd = TheorySDD(phi, "partial")
     assert tsdd.count_nodes() <= 1, "TSDD is only True node"
     assert tsdd.count_models() == 1, "TSDD should have 1 model (atom True)"
+def _create_disjunct(model):
+    literals = []
+    for atom, truth in model.items():
+        if truth:
+            literals.append(atom)
+        else:
+            literals.append(Not(atom))
+    return And(*literals)
+
+
+test_phi = [
+    Or(  # SAT
+        LT(Symbol("X", REAL), Symbol("Y", REAL)),
+        LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
+        LT(Symbol("Zr", REAL), Symbol("X", REAL)),
+    ),
+    And(  # UNSAT
+        LT(Symbol("X", REAL), Symbol("Y", REAL)),
+        LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
+        LT(Symbol("Zr", REAL), Symbol("X", REAL)),
+    ),
+    Or(  # VALID
+        LT(Symbol("X", REAL), Symbol("Y", REAL)),
+        Not(LT(Symbol("X", REAL), Symbol("Y", REAL))),
+    ),
+    formula.read_phi("./tests/items/rng.smt"),
+]
+
+
+# @pytest.mark.parametrize("phi", test_phi)
+# def test_init_models_partial(phi):
+#     """tests that models of the T-BDD are also models of phi"""
+#     partial = PartialSMTSolver()
+#     partial.check_all_sat(phi, None)
+#     tlemmas = partial.get_theory_lemmas()
+#     tbdd = TheorySDD(phi, solver=partial, tlemmas=tlemmas)
+#     ddmodels = tbdd.pick_all()
+
+#     # check SMT of not (phi <=> encoding)
+#     # if UNSAT => encoding is correct
+#     phi_iff_encoding = Not(Iff(phi, Or(*[_create_disjunct(m) for m in ddmodels])))
+#     assert not is_sat(phi_iff_encoding), "not phi iff models should be UNSAT"
+
+#     # check all models are also models of phi
+#     for model in ddmodels:
+#         phi_and_model = And(phi, _create_disjunct(model))
+#         assert is_sat(phi_and_model), "Every model should be also a model for phi"
+
+
+# @pytest.mark.parametrize("phi", test_phi)
+# def test_init_models_total(phi):
+#     """tests that models of the T-BDD are also models of phi"""
+#     total = SMTSolver()
+#     total.check_all_sat(phi, None)
+#     tbdd = TheorySDD(phi, solver=total)
+#     ddmodels = tbdd.pick_all()
+
+#     # check SMT of not (phi <=> encoding)
+#     # if UNSAT => encoding is correct
+#     phi_iff_encoding = Not(Iff(phi, Or(*[_create_disjunct(m) for m in ddmodels])))
+#     assert not is_sat(phi_iff_encoding), "not phi iff models should be UNSAT"
+
+#     # check all models are also models of phi
+#     for model in ddmodels:
+#         phi_and_model = And(phi, _create_disjunct(model))
+#         assert is_sat(phi_and_model), "Every model should be also a model for phi"
+
+
+def test_lemma_loading_total():
+    """tests loading data with total solver"""
+    phi = formula.read_phi("./tests/items/rng.smt")
+    total = SMTSolver()
+    tbdd = TheorySDD(phi, solver=total, load_lemmas="./tests/items/rng_lemmas.smt")
+    other_phi = formula.read_phi("./tests/items/rng.smt")
+    other_total = SMTSolver()
+    other_tbdd = TheorySDD(other_phi, solver=other_total)
+    assert (
+        tbdd.count_models() == other_tbdd.count_models()
+    ), "Same modles should come from different loading"
+
+
+def test_lemma_loading_partial():
+    """tests loading data with partial solver"""
+    phi = formula.read_phi("./tests/items/rng.smt")
+    partial = PartialSMTSolver()
+    tbdd = TheorySDD(phi, solver=partial, load_lemmas="./tests/items/rng_lemmas.smt")
+    other_phi = formula.read_phi("./tests/items/rng.smt")
+    other_partial = PartialSMTSolver()
+    other_tbdd = TheorySDD(other_phi, solver=other_partial)
+    assert (
+        tbdd.count_models() == other_tbdd.count_models()
+    ), "Same modles should come from different loading"

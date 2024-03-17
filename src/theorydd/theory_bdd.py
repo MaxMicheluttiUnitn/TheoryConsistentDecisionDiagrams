@@ -17,6 +17,7 @@ from theorydd.lemma_extractor import extract, find_qvars
 from theorydd.constants import SAT, UNSAT, VALID_SOLVER
 from theorydd.custom_exceptions import InvalidSolverException
 
+
 class TheoryBDD:
     """Class to generate and handle T-BDDs
 
@@ -63,7 +64,11 @@ class TheoryBDD:
             print("Normalizing phi according to solver...")
         if isinstance(solver, str):
             if solver not in VALID_SOLVER:
-                raise InvalidSolverException(solver+" is not a valid solvers. Valid solvers: "+str(VALID_SOLVER))
+                raise InvalidSolverException(
+                    solver
+                    + " is not a valid solvers. Valid solvers: "
+                    + str(VALID_SOLVER)
+                )
             if solver == "total":
                 smt_solver = SMTSolver()
             else:
@@ -93,6 +98,7 @@ class TheoryBDD:
                 computation_logger=computation_logger["T-BDD"],
             )
             phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
+        phi_and_lemmas = formula.get_normalized(phi_and_lemmas, smt_solver.get_converter())
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
@@ -168,6 +174,8 @@ class TheoryBDD:
 
     def count_models(self) -> int:
         """returns the amount of models in the T-BDD"""
+        print(len(self.mapping.keys()))
+        print(len(self.qvars))
         return self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
 
     def dump(
@@ -210,3 +218,20 @@ class TheoryBDD:
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
         return self.mapping
+
+    def pick(self) -> Dict[FNode, bool] | None:
+        """Returns a partial model of the encoded formula"""
+        if self.root == self.bdd.false:
+            return None
+        return self._convert_assignment(self.root.pick())
+
+    def _convert_assignment(self, assignment):
+        inv_map = {v: k for k, v in self.mapping.items()}
+        return {inv_map[var]: truth for var, truth in assignment.items()}
+
+    def pick_all(self) -> List[Dict[FNode, bool]]:
+        """Returns all partial models of the encoded formula"""
+        if self.root == self.bdd.false:
+            return []
+        items = list(self.bdd.pick_iter(self.root))
+        return [self._convert_assignment(i) for i in items]

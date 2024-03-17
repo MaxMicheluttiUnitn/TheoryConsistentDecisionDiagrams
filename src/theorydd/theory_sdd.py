@@ -78,7 +78,11 @@ class TheorySDD:
             print("Normalizing phi according to solver...")
         if isinstance(solver, str):
             if solver not in VALID_SOLVER:
-                raise InvalidSolverException(solver+" is not a valid solvers. Valid solvers: "+str(VALID_SOLVER))
+                raise InvalidSolverException(
+                    solver
+                    + " is not a valid solvers. Valid solvers: "
+                    + str(VALID_SOLVER)
+                )
             if solver == "total":
                 smt_solver = SMTSolver()
             else:
@@ -108,6 +112,9 @@ class TheorySDD:
                 computation_logger=computation_logger["T-SDD"],
             )
             phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
+        phi_and_lemmas = formula.get_normalized(
+            phi_and_lemmas, smt_solver.get_converter()
+        )
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
@@ -266,3 +273,15 @@ class TheorySDD:
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
         return self.mapping
+
+    def pick(self) -> Dict[FNode, bool]:
+        """Returns a model of the encoded formula"""
+        raise NotImplementedError()
+        return {}
+
+    def pick_all(self) -> List[Dict[FNode, bool]]:
+        """returns a list of all the models in the encoded formula"""
+        raise NotImplementedError()
+        if self.root.is_false():
+            return []
+        return []
