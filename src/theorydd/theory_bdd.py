@@ -174,8 +174,6 @@ class TheoryBDD:
 
     def count_models(self) -> int:
         """returns the amount of models in the T-BDD"""
-        print(len(self.mapping.keys()))
-        print(len(self.qvars))
         return self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
 
     def dump(
