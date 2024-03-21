@@ -98,11 +98,9 @@ class TheorySDD:
             print("Loading Lemmas...")
         if tlemmas is not None:
             computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
-            phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         elif load_lemmas is not None:
             computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
-            tlemmas = formula.read_phi(load_lemmas)
-            phi_and_lemmas = formula.get_phi_and_lemmas(phi, [tlemmas])
+            tlemmas = [formula.read_phi(load_lemmas)]
         else:
             computation_logger["T-SDD"]["ALL SMT mode"] = "computed"
             _satisfiability, tlemmas, _bm = extract(
@@ -111,10 +109,8 @@ class TheorySDD:
                 verbose=verbose,
                 computation_logger=computation_logger["T-SDD"],
             )
-            phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
-        phi_and_lemmas = formula.get_normalized(
-            phi_and_lemmas, smt_solver.get_converter()
-        )
+        tlemmas = list(map(lambda l: formula.get_normalized(l,smt_solver.get_converter()), tlemmas))
+        phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,

@@ -68,8 +68,8 @@ class PartialSMTSolver:
 
         self.solver.reset_assertions()
         self.solver_total.reset_assertions()
-        phi = PolarityCNFizer(nnf=True, mutex_nnf_labels=True).convert_as_formula(phi)
-        self.solver.add_assertion(phi)
+        phi_tsetsin = PolarityCNFizer(nnf=True, mutex_nnf_labels=True).convert_as_formula(phi)
+        self.solver.add_assertion(phi_tsetsin)
 
         partial_models = []
         mathsat.msat_all_sat(
@@ -87,8 +87,8 @@ class PartialSMTSolver:
             for l in mathsat.msat_get_theory_lemmas(self.solver.msat_env())
         ]
 
-        phi_plus_lemmas = And(phi, *self._tlemmas)
-        self.solver_total.add_assertion(phi_plus_lemmas)
+        # phi_plus_lemmas = And(phi, *self._tlemmas)
+        # self.solver_total.add_assertion(phi_plus_lemmas)
 
         if len(partial_models) == 0:
             return UNSAT
