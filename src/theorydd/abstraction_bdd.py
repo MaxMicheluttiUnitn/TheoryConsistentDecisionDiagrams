@@ -2,7 +2,7 @@
 
 import time
 import os
-from typing import Dict
+from typing import Dict, List
 from pysmt.fnode import FNode
 import pydot
 from dd import cudd as cudd_bdd
@@ -148,3 +148,24 @@ class AbstractionBDD:
         else:
             print("Unable to dump BDD file: format not unsupported")
             return
+        
+    def get_mapping(self) -> Dict:
+        """Returns the variable mapping used"""
+        return self.mapping
+
+    def pick(self) -> Dict[FNode, bool] | None:
+        """Returns a partial model of the encoded formula"""
+        if self.root == self.bdd.false:
+            return None
+        return self._convert_assignment(self.root.pick())
+
+    def _convert_assignment(self, assignment):
+        inv_map = {v: k for k, v in self.mapping.items()}
+        return {inv_map[var]: truth for var, truth in assignment.items()}
+
+    def pick_all(self) -> List[Dict[FNode, bool]]:
+        """Returns all partial models of the encoded formula"""
+        if self.root == self.bdd.false:
+            return []
+        items = list(self.bdd.pick_iter(self.root))
+        return [self._convert_assignment(i) for i in items]

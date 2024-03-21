@@ -1,10 +1,47 @@
 # Theory Consistent Decision Diagrams
 
-Repository for the theorydd package
+Repository for the Python 3.10 theorydd package, which allows the generation and handling of Theory Consistent Decision Diagrams.
+
+## Installing
+
+First, install the dd dependency as follows:
+
+```
+    pip install --upgrade wheel cython
+    export DD_FETCH=1 DD_CUDD=1 DD_LDD=1
+    pip install git+https://github.com/masinag/dd.git@main -vvv --use-pep517 --no-build-isolation
+```
+
+You can check that the dependency is installed correctly if the following command does not give you ant errors
+
+```
+    python -c 'from dd import ldd; ldd.LDD(ldd.TVPI,0,0)'
+```
+
+Now install the theorydd package (this package) from git
+
+```
+    pip install theorydd@git+https://github.com/MaxMicheluttiUnitn/TheoryConsistentDecisionDiagrams@main
+```
+
+After the pacckage and all the depnedencies have benn installed, use the pysmt-install tool to install the MathSAT SMT-solver. if you are using this package in a virtual environment, install the solver in a subfolder of the virtual environment folder by adding the option --install-path YOUR_VENV_FOLDER/solvers
+
+```
+    pysmt-install --msat
+```
+
+To check that everything is installed correctly type:
+
+```
+    python -c "from theorydd.theory_bdd import TheoryBDD as TBDD; import theorydd.formula as f; TBDD(f.default_phi())"
+```
+
+If you only see a imp warning, but no error message is displayed, everything should be installed correctly.
+
 
 ## Dumping T-BDDs and Abstraction-BDDs on dot files
 
-The dd library was slightly changed to allow for .dot dumping as follows:
+The dump BDDs on .dot files change the dd library code as follows:
 
 ```
 def dump(self, filename, roots=None,
