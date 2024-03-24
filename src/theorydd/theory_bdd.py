@@ -113,7 +113,7 @@ class TheoryBDD:
         if verbose:
             print("Creating mapping...")
         self.mapping = {}
-        atoms = get_atoms(phi)
+        atoms = get_atoms(phi_and_lemmas)
         string_generator = SequentialStringGenerator()
         for atom in atoms:
             self.mapping[atom] = string_generator.next_string()
