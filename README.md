@@ -91,3 +91,8 @@ def dump(self, filename, roots=None,
                 'Unknown file type of "{f}"'.format(
                     f=filename))
 ```
+
+License
+-------
+
+theorydd is licensed under [MIT](LICENSE).
