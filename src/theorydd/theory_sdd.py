@@ -109,7 +109,11 @@ class TheorySDD:
                 verbose=verbose,
                 computation_logger=computation_logger["T-SDD"],
             )
-        tlemmas = list(map(lambda l: formula.get_normalized(l,smt_solver.get_converter()), tlemmas))
+        tlemmas = list(
+            map(
+                lambda l: formula.get_normalized(l, smt_solver.get_converter()), tlemmas
+            )
+        )
         phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
         self.qvars = find_qvars(
             phi,
@@ -117,14 +121,14 @@ class TheorySDD:
             verbose=verbose,
             computation_logger=computation_logger["T-SDD"],
         )
-        phi = phi_and_lemmas
+        # phi = phi_and_lemmas
 
         # CREATING VARIABLE MAPPING
         start_time = time.time()
         if verbose:
             print("Creating mapping...")
         self.mapping = {}
-        atoms = get_atoms(phi)
+        atoms = get_atoms(phi_and_lemmas)
         string_generator = SequentialStringGenerator()
         for atom in atoms:
             self.mapping[atom] = string_generator.next_string()
@@ -137,7 +141,7 @@ class TheorySDD:
         start_time = time.time()
         if verbose:
             print("Building V-Tree...")
-        atoms = get_atoms(phi)
+        atoms = get_atoms(phi_and_lemmas)
         var_count = len(atoms)
         string_generator = SDDSequentailStringGenerator()
         self.name_to_atom_map = {}
@@ -155,16 +159,33 @@ class TheorySDD:
         # BUILDING SDD WITH WALKER
         start_time = time.time()
         if verbose:
-            print("Building T-SDD...")
+            print("Preparing to build T-SDD...")
         self.manager = SddManager.from_vtree(self.vtree)
         sdd_literals = [self.manager.literal(i) for i in range(1, var_count + 1)]
         atom_literal_map = dict(zip(atoms, sdd_literals))
         walker = SDDWalker(atom_literal_map, self.manager)
-        self.root = walker.walk(phi)
+        if verbose:
+            print("BDD preparation phase completed in ", elapsed_time, " seconds")
+        computation_logger["T-SDD"]["DD preparation time"] = elapsed_time
+
+        start_time = time.time()
+        if verbose:
+            print("Building SDD for phi...")
+        phi_sdd = walker.walk(phi)
         elapsed_time = time.time() - start_time
         if verbose:
             print("SDD built in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["DD building time"] = elapsed_time
+        computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
+
+        # BUILDING T-LEMMAS SDD
+        start_time = time.time()
+        if verbose:
+            print("Building T-SDD for big and of t-lemmas...")
+        tlemmas_sdd = walker.walk(formula.big_and(tlemmas))
+        elapsed_time = time.time() - start_time
+        if verbose:
+            print("SDD built in ", elapsed_time, " seconds")
+        computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
 
         # QUANTIFYING OVER FRESH T-ATOMS
         start_time = time.time()
@@ -176,11 +197,23 @@ class TheorySDD:
                 existential_map.append(1)
             else:
                 existential_map.append(0)
-        self.root = self.manager.exists_multiple(array("i", existential_map), self.root)
+        tlemmas_sdd = self.manager.exists_multiple(
+            array("i", existential_map), tlemmas_sdd
+        )
         elapsed_time = time.time() - start_time
         if verbose:
             print("Quantified over fresh T-atoms in ", elapsed_time, " seconds")
         computation_logger["T-SDD"]["fresh T-atoms quantification time"] = elapsed_time
+
+        # JOINING PHI SDD AND TLEMMAS SDD
+        start_time = time.time()
+        if verbose:
+            print("Joining phi BDD and lemmas T-SDD...")
+        self.root = phi_sdd & tlemmas_sdd
+        elapsed_time = time.time() - start_time
+        if verbose:
+            print("T-SDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
+        computation_logger["T-SDD"]["DD joining time"] = elapsed_time
 
     def __len__(self) -> int:
         return max(self.root.count(), 1)

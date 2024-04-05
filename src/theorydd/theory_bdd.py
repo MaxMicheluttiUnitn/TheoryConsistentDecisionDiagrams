@@ -95,7 +95,11 @@ class TheoryBDD:
                 verbose=verbose,
                 computation_logger=computation_logger["T-BDD"],
             )
-        tlemmas = list(map(lambda l: formula.get_normalized(l,smt_solver.get_converter()), tlemmas))
+        tlemmas = list(
+            map(
+                lambda l: formula.get_normalized(l, smt_solver.get_converter()), tlemmas
+            )
+        )
         # BASICALLY PADDING TO AVOID POSSIBLE ISSUES
         while len(tlemmas) < 2:
             tlemmas.append(formula.top())
@@ -106,14 +110,17 @@ class TheoryBDD:
             verbose=verbose,
             computation_logger=computation_logger["T-BDD"],
         )
-        #phi = phi_and_lemmas
+        print(len(self.qvars))
+        atoms = get_atoms(phi_and_lemmas)
+        print(len(atoms))
+        # phi = phi_and_lemmas
 
         # CREATING VARIABLE MAPPING
         start_time = time.time()
         if verbose:
             print("Creating mapping...")
         self.mapping = {}
-        atoms = get_atoms(phi_and_lemmas)
+
         string_generator = SequentialStringGenerator()
         for atom in atoms:
             self.mapping[atom] = string_generator.next_string()
@@ -155,7 +162,7 @@ class TheoryBDD:
         computation_logger["T-BDD"]["phi DD building time"] = elapsed_time
         start_time = time.time()
         if verbose:
-            print("Building T-BDD for phi and lemmas...")
+            print("Building T-BDD for big and of t-lemmas...")
         tlemmas_bdd = walker.walk(formula.big_and(tlemmas))
         elapsed_time = time.time() - start_time
         if verbose:
@@ -170,7 +177,11 @@ class TheoryBDD:
             tlemmas_bdd = cudd_bdd.and_exists(tlemmas_bdd, self.bdd.true, mapped_qvars)
             elapsed_time = time.time() - start_time
             if verbose:
-                print("fresh T-atoms quantification completed in ", elapsed_time, " seconds")
+                print(
+                    "fresh T-atoms quantification completed in ",
+                    elapsed_time,
+                    " seconds",
+                )
             computation_logger["T-BDD"][
                 "fresh T-atoms quantification time"
             ] = elapsed_time
@@ -180,11 +191,11 @@ class TheoryBDD:
         # JOINING PHI BDD AND TLEMMAS BDD
         start_time = time.time()
         if verbose:
-            print("joining phi BDD and lemmas T-BDD...")
+            print("Joining phi BDD and lemmas T-BDD...")
         self.root = phi_bdd & tlemmas_bdd
         elapsed_time = time.time() - start_time
         if verbose:
-            print("BDD for T-lemmas built in ", elapsed_time, " seconds")
+            print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
         computation_logger["T-BDD"]["DD joining time"] = elapsed_time
 
     def __len__(self) -> int:

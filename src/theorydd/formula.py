@@ -195,4 +195,8 @@ def big_and(nodes: List[FNode]) -> FNode:
 
     Returns:
         FNode: the big and of all the nodes"""
+    if len(nodes) == 0:
+        return _TRUE()
+    elif len(nodes) == 1:
+        return nodes[0]
     return _And(*nodes)

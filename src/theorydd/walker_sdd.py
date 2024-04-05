@@ -24,7 +24,7 @@ class SDDWalker(DagWalker):
 
     def _apply_mapping(self, arg):
         """applies the mapping when possible, returns None otherwise"""
-        if not self.mapping.get(arg) is None:
+        if self.mapping.get(arg) is not None:
             return self.mapping[arg]
         return None
 
@@ -112,5 +112,6 @@ class SDDWalker(DagWalker):
     def do_nothing(self, formula, args, **kwargs):
         """do nothing when seeing theory constants"""
         # pylint: disable=unused-argument
+        # they are not a valid T-atom by themselves, no need to perform any computation
         return
         # raise UnsupportedNodeException("Pure Theory Constant Found: "+str(formula))
