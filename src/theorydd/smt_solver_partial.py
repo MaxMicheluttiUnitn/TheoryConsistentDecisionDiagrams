@@ -21,17 +21,17 @@ class PartialSMTSolver:
         solver_options_dict = {
             "dpll.allsat_minimize_model": "true",  # - total truth assignments
             #"theory.pure_literal_filtering": "true",
-            # "dpll.allsat_allow_duplicates": "false", # - to prodi ce not necessarily disjoint truth assignments.
+            # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
             "preprocessor.toplevel_propagation": "false",
-            "preprocessor.simplification": "0",  # da mathsat
+            "preprocessor.simplification": "0",  # from mathsat
             "dpll.store_tlemmas": "true",  # - necessary to obtain t-lemmas
         }
         solver_options_dict_total = {
             "dpll.allsat_minimize_model": "false",  # - total truth assignments
             #"theory.pure_literal_filtering": "true",
-            # "dpll.allsat_allow_duplicates": "false", # - to prodi ce not necessarily disjoint truth assignments.
+            # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
             "preprocessor.toplevel_propagation": "false",

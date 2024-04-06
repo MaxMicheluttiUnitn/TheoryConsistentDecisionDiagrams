@@ -1,5 +1,6 @@
 """this module defines a Walker that takes a pysmt formula and converts it into a SDD formula"""
 
+from typing import List
 from pysdd.sdd import SddManager
 from pysmt.fnode import FNode
 from pysmt.walkers import DagWalker, handles
@@ -31,22 +32,22 @@ class SDDWalker(DagWalker):
     def walk_and(self, formula: FNode, args, **kwargs):
         """translate AND node"""
         # pylint: disable=unused-argument
-        if len(args) == 1:
-            return args[0]
-        res = args[0]
-        for i in range(1, len(args)):
-            res = res & args[i]
-        return res
+        nodes: List = list(args)
+        while len(nodes) > 1:
+            first = nodes.pop(0)
+            second = nodes.pop(0)
+            nodes.append(first & second)
+        return nodes[0]
 
     def walk_or(self, formula: FNode, args, **kwargs):
         """translate OR node"""
         # pylint: disable=unused-argument
-        if len(args) == 1:
-            return args[0]
-        res = args[0]
-        for i in range(1, len(args)):
-            res = res | args[i]
-        return res
+        nodes: List = list(args)
+        while len(nodes) > 1:
+            first = nodes.pop(0)
+            second = nodes.pop(0)
+            nodes.append(first | second)
+        return nodes[0]
 
     def walk_not(self, formula: FNode, args, **kwargs):
         """translate NOT node"""
