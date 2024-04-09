@@ -111,7 +111,7 @@ class TheoryLDD:
         """Returns the amount of models in the T-SDD"""
         support_size = len(self.manager.vars)
         if self.root == self.manager.true:
-            return 2 ** support_size
+            return int(2 ** support_size)
         elif self.root == self.manager.false:
             return 0
         return _recursive_mc(self.root, {}, self.manager, support_size)
@@ -135,16 +135,16 @@ def _recursive_mc(node, memo: Dict, manager, support_size: int) -> int:
         memo[node] = 0
     if memo[node] > 0:
         return memo[node]
-    i = node._index
+    i = int(node._index)
     if node.high == manager.true or node.high == manager.false:
-        i_1 = support_size
+        i_1 = int(support_size)
     else:
-        i_1 = node.high._index
+        i_1 = int(node.high._index)
     if node.low == manager.true or node.low == manager.false:
-        i_0 = support_size
+        i_0 = int(support_size)
     else:
-        i_0 = node.low._index
-    memo[node] = (2 ** (i_1 - i - 1)) * _recursive_mc(
+        i_0 = int(node.low._index)
+    memo[node] = int(2 ** (i_1 - i - 1)) * _recursive_mc(
         node.high, memo, manager, support_size
-    ) + (2 ** (i_0 - i - 1)) * _recursive_mc(node.low, memo, manager, support_size)
+    ) + int(2 ** (i_0 - i - 1)) * _recursive_mc(node.low, memo, manager, support_size)
     return memo[node]
