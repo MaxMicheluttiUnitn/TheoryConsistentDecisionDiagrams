@@ -128,8 +128,8 @@ class LDDWalker(DagWalker):
             c_obj: ConstraintObject = args[0]
             return [ConstraintObject(c_obj.constr_index,-c_obj.constr_mult)]
         else:
-            left_c_obj : ConstraintObject = args[0]
-            right_c_obj: ConstraintObject = args[1]
+            left_c_obj : ConstraintObject = args[0][0]
+            right_c_obj: ConstraintObject = args[1][0]
             return [left_c_obj,ConstraintObject[right_c_obj.constr_index,-right_c_obj.constr_mult]]
 
     @handles(op.PLUS)
