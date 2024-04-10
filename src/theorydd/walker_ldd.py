@@ -130,7 +130,7 @@ class LDDWalker(DagWalker):
         else:
             left_c_obj : ConstraintObject = args[0][0]
             right_c_obj: ConstraintObject = args[1][0]
-            return [left_c_obj,ConstraintObject[right_c_obj.constr_index,-right_c_obj.constr_mult]]
+            return [left_c_obj,ConstraintObject(right_c_obj.constr_index,-right_c_obj.constr_mult)]
 
     @handles(op.PLUS)
     def walk_plus(self, formula, args, **kwargs):
