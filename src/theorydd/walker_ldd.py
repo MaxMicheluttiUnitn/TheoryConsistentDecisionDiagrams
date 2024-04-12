@@ -210,7 +210,7 @@ class LDDWalker(DagWalker):
             res = tuple([tuple(var_list), False, const_c_obj.constr_mult])
             return self.manager.constraint(res)
         else:
-            if const_c_obj.constr_mult <= 0:
+            if const_c_obj.constr_mult >= 0:
                 return self.manager.true
             return self.manager.false
 
@@ -253,7 +253,7 @@ class LDDWalker(DagWalker):
             res = tuple([tuple(var_list), False, const_c_obj.constr_mult])
             return self.manager.constraint(res)
         else:
-            if const_c_obj.constr_mult < 0:
+            if const_c_obj.constr_mult > 0:
                 return self.manager.true
             return self.manager.false
 
