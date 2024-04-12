@@ -172,7 +172,6 @@ class LDDWalker(DagWalker):
     @handles(op.LE)
     def walk_le(self, formula, args, **kwargs):
         """translate <= node"""
-        print("le",formula,args)
         # pylint: disable=unused-argument
         # args[0] is the tuple describing the constraint [tuple[int]]
         # args[1] is the constant on the right [int]
@@ -217,7 +216,6 @@ class LDDWalker(DagWalker):
     @handles(op.LT)
     def walk_lt(self, formula, args, **kwargs):
         """translate < node"""
-        print("lt",formula,args)
         # pylint: disable=unused-argument
         left_c_objs: List[ConstraintObject] = args[0]
         right_c_objs: List[ConstraintObject] = args[1]
@@ -272,7 +270,6 @@ class LDDWalker(DagWalker):
     @handles(op.EQUALS)
     def walk_equals(self, formula, args, **kwargs):
         """translate * node"""
-        print("eq")
         # pylint: disable=unused-argument
         left_c_objs: List[ConstraintObject] = args[0]
         right_c_objs: List[ConstraintObject] = args[1]
