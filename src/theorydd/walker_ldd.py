@@ -1,5 +1,6 @@
 """this module defines a Walker that takes a pysmt formula and converts it into a LDD formula"""
 
+from collections import deque
 from dataclasses import dataclass
 from typing import List
 from dd import ldd as ldd_lib
@@ -7,7 +8,6 @@ from pysmt.fnode import FNode
 from pysmt.shortcuts import BOOL
 from pysmt.walkers import DagWalker, handles
 import pysmt.operators as op
-from fractions import Fraction
 
 from theorydd.custom_exceptions import UnsupportedNodeException
 
@@ -53,22 +53,22 @@ class LDDWalker(DagWalker):
     def walk_and(self, formula: FNode, args, **kwargs):
         """translate AND node"""
         # pylint: disable=unused-argument
-        nodes: List = list(args)
+        nodes: deque = deque(args)
         while len(nodes) > 1:
-            first = nodes.pop(0)
-            second = nodes.pop(0)
+            first = nodes.popleft()
+            second = nodes.popleft()
             nodes.append(first & second)
-        return nodes[0]
+        return nodes.popleft()
 
     def walk_or(self, formula: FNode, args, **kwargs):
         """translate OR node"""
         # pylint: disable=unused-argument
-        nodes: List = list(args)
+        nodes: deque = deque(args)
         while len(nodes) > 1:
-            first = nodes.pop(0)
-            second = nodes.pop(0)
+            first = nodes.popleft()
+            second = nodes.popleft()
             nodes.append(first | second)
-        return nodes[0]
+        return nodes.popleft()
 
     def walk_not(self, formula: FNode, args, **kwargs):
         """translate NOT node"""
@@ -150,11 +150,16 @@ class LDDWalker(DagWalker):
             if right_c_obj.constr_index != left_c_obj.constr_index:
                 return [
                     left_c_obj,
-                    ConstraintObject(right_c_obj.constr_index, -right_c_obj.constr_mult),
+                    ConstraintObject(
+                        right_c_obj.constr_index, -right_c_obj.constr_mult
+                    ),
                 ]
             else:
                 return [
-                    ConstraintObject(right_c_obj.constr_index,left_c_obj.constr_mult - right_c_obj.constr_mult)
+                    ConstraintObject(
+                        right_c_obj.constr_index,
+                        left_c_obj.constr_mult - right_c_obj.constr_mult,
+                    )
                 ]
 
     @handles(op.PLUS)
@@ -167,7 +172,7 @@ class LDDWalker(DagWalker):
                 if c_obj_marker.get(c_obj.constr_index) is None:
                     c_obj_marker[c_obj.constr_index] = 0
                 c_obj_marker[c_obj.constr_index] += c_obj.constr_mult
-        return [ConstraintObject(k,v) for k,v in c_obj_marker.items()]
+        return [ConstraintObject(k, v) for k, v in c_obj_marker.items()]
 
     @handles(op.LE)
     def walk_le(self, formula, args, **kwargs):

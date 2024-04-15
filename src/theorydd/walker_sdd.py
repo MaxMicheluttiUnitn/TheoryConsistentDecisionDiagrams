@@ -1,5 +1,6 @@
 """this module defines a Walker that takes a pysmt formula and converts it into a SDD formula"""
 
+from collections import deque
 from typing import List
 from pysdd.sdd import SddManager
 from pysmt.fnode import FNode
@@ -32,22 +33,22 @@ class SDDWalker(DagWalker):
     def walk_and(self, formula: FNode, args, **kwargs):
         """translate AND node"""
         # pylint: disable=unused-argument
-        nodes: List = list(args)
+        nodes: deque = deque(args)
         while len(nodes) > 1:
-            first = nodes.pop(0)
-            second = nodes.pop(0)
+            first = nodes.popleft()
+            second = nodes.popleft()
             nodes.append(first & second)
-        return nodes[0]
+        return nodes.popleft()
 
     def walk_or(self, formula: FNode, args, **kwargs):
         """translate OR node"""
         # pylint: disable=unused-argument
-        nodes: List = list(args)
+        nodes: deque = deque(args)
         while len(nodes) > 1:
-            first = nodes.pop(0)
-            second = nodes.pop(0)
+            first = nodes.popleft()
+            second = nodes.popleft()
             nodes.append(first | second)
-        return nodes[0]
+        return nodes.popleft()
 
     def walk_not(self, formula: FNode, args, **kwargs):
         """translate NOT node"""
@@ -102,7 +103,7 @@ class SDDWalker(DagWalker):
         *op.BV_RELATIONS,
         *op.IRA_RELATIONS,
         *op.STR_RELATIONS,
-        op.EQUALS
+        op.EQUALS,
     )
     def walk_theory(self, formula, args, **kwargs):
         """translate theory node"""
