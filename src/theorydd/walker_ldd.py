@@ -253,7 +253,7 @@ class LDDWalker(DagWalker):
                 var_list_empty = False
                 break
         if not var_list_empty:
-            res = tuple([tuple(var_list), False, const_c_obj.constr_mult])
+            res = tuple([tuple(var_list), True, const_c_obj.constr_mult])
             return self.manager.constraint(res)
         else:
             if const_c_obj.constr_mult > 0:
