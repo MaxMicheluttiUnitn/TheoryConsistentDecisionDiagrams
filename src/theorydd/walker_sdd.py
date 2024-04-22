@@ -33,6 +33,8 @@ class SDDWalker(DagWalker):
     def walk_and(self, formula: FNode, args, **kwargs):
         """translate AND node"""
         # pylint: disable=unused-argument
+        if None in args:
+            return
         nodes: deque = deque(args)
         while len(nodes) > 1:
             first = nodes.popleft()
@@ -43,6 +45,8 @@ class SDDWalker(DagWalker):
     def walk_or(self, formula: FNode, args, **kwargs):
         """translate OR node"""
         # pylint: disable=unused-argument
+        if None in args:
+            return
         nodes: deque = deque(args)
         while len(nodes) > 1:
             first = nodes.popleft()
@@ -53,6 +57,8 @@ class SDDWalker(DagWalker):
     def walk_not(self, formula: FNode, args, **kwargs):
         """translate NOT node"""
         # pylint: disable=unused-argument
+        if None in args:
+            return
         return ~args[0]
 
     def walk_symbol(self, formula: FNode, args, **kwargs):
@@ -76,16 +82,22 @@ class SDDWalker(DagWalker):
     def walk_iff(self, formula, args, **kwargs):
         """translate IFF node"""
         # pylint: disable=unused-argument
+        if None in args:
+            return
         return (args[0] & args[1]) | ((~args[0]) & (~args[1]))
 
     def walk_implies(self, formula, args, **kwargs):
         """translate IMPLIES node"""  # a -> b === (~ a) v b
         # pylint: disable=unused-argument
+        if None in args:
+            return
         return (~args[0]) | args[1]
 
     def walk_ite(self, formula, args, **kwargs):
         """translate ITE node"""
         # pylint: disable=unused-argument
+        if None in args:
+            return
         return ((~args[0]) | args[1]) & (args[0] | args[2])
 
     def walk_forall(self, formula, args, **kwargs):

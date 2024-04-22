@@ -110,9 +110,9 @@ class TheoryBDD:
             verbose=verbose,
             computation_logger=computation_logger["T-BDD"],
         )
-        print(len(self.qvars))
+        # print(len(self.qvars))
         atoms = get_atoms(phi_and_lemmas)
-        print(len(atoms))
+        # print(len(atoms))
         # phi = phi_and_lemmas
 
         # CREATING VARIABLE MAPPING

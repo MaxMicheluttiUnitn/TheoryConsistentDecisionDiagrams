@@ -81,7 +81,7 @@ class NormalizerWalker(DagWalker):
         return self._convert(formula)
 
     @handles(*op.THEORY_OPERATORS, *op.BV_RELATIONS, *op.IRA_RELATIONS,
-             *op.STR_RELATIONS, op.REAL_CONSTANT, op.BV_CONSTANT, op.INT_CONSTANT)
+             *op.STR_RELATIONS, op.REAL_CONSTANT, op.BV_CONSTANT, op.INT_CONSTANT, op.FUNCTION)
     def walk_theory(self, formula, args, **kwargs):
         '''translate theory node'''
         # pylint: disable=unused-argument
