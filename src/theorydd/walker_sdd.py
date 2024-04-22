@@ -116,6 +116,7 @@ class SDDWalker(DagWalker):
         *op.IRA_RELATIONS,
         *op.STR_RELATIONS,
         op.EQUALS,
+        op.FUNCTION
     )
     def walk_theory(self, formula, args, **kwargs):
         """translate theory node"""
