@@ -28,6 +28,7 @@ class SMTSolver:
             "preprocessor.toplevel_propagation": "false",
             "preprocessor.simplification": "0",  # from mathsat
             "dpll.store_tlemmas": "true",  # - necessary to get t-lemmas
+            "theory.la.split_rat_eq":"false", 
         }
         self.solver = Solver("msat", solver_options=solver_options_dict)
         self._last_phi = None

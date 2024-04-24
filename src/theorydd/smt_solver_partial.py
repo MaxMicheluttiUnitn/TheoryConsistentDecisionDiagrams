@@ -27,6 +27,7 @@ class PartialSMTSolver:
             "preprocessor.toplevel_propagation": "false",
             "preprocessor.simplification": "0",  # from mathsat
             "dpll.store_tlemmas": "true",  # - necessary to obtain t-lemmas
+            "theory.la.split_rat_eq":"false", 
         }
         solver_options_dict_total = {
             "dpll.allsat_minimize_model": "false",  # - total truth assignments
@@ -37,6 +38,7 @@ class PartialSMTSolver:
             "preprocessor.toplevel_propagation": "false",
             "preprocessor.simplification": "0",  # from mathsat
             "dpll.store_tlemmas": "true",  # - necessary to obtain t-lemmas
+            "theory.la.split_rat_eq":"false", 
         }
         self.solver = Solver("msat", solver_options=solver_options_dict)
         self.solver_total = Solver("msat", solver_options=solver_options_dict_total)
