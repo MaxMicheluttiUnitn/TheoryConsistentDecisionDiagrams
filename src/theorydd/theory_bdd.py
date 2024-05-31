@@ -9,6 +9,7 @@ from dd import cudd as cudd_bdd
 from theorydd import formula
 from theorydd._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
 from theorydd.smt_solver import SAT, SMTSolver
+from theorydd.smt_solver_full_partial import FullPartialSMTSolver
 from theorydd.smt_solver_partial import PartialSMTSolver
 from theorydd._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
@@ -33,7 +34,7 @@ class TheoryBDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str | SMTSolver | PartialSMTSolver = "partial",
+        solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
         load_lemmas: str | None = None,
         tlemmas: List[FNode] = None,
         computation_logger: Dict = None,
@@ -63,16 +64,18 @@ class TheoryBDD:
         if verbose:
             print("Normalizing phi according to solver...")
         if isinstance(solver, str):
-            if solver not in VALID_SOLVER:
+            if solver == "total":
+                smt_solver = SMTSolver()
+            elif solver == "partial":
+                smt_solver = PartialSMTSolver()
+            elif solver == "full partial":
+                smt_solver = FullPartialSMTSolver()
+            else:
                 raise InvalidSolverException(
                     solver
                     + " is not a valid solvers. Valid solvers: "
                     + str(VALID_SOLVER)
                 )
-            if solver == "total":
-                smt_solver = SMTSolver()
-            else:
-                smt_solver = PartialSMTSolver()
         else:
             smt_solver = solver
         phi = formula.get_normalized(phi, smt_solver.get_converter())

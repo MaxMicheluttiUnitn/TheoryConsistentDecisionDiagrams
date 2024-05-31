@@ -8,6 +8,7 @@ from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
 from theorydd.lemma_extractor import extract, find_qvars
 from theorydd.smt_solver import SMTSolver, SAT
+from theorydd.smt_solver_full_partial import FullPartialSMTSolver
 from theorydd.smt_solver_partial import PartialSMTSolver
 from theorydd._string_generator import (
     SDDSequentailStringGenerator,
@@ -37,7 +38,7 @@ class TheorySDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str | SMTSolver | PartialSMTSolver = "partial",
+        solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
         computation_logger: Dict = None,
         verbose: bool = False,
         load_lemmas: str | None = None,
@@ -77,16 +78,18 @@ class TheorySDD:
         if verbose:
             print("Normalizing phi according to solver...")
         if isinstance(solver, str):
-            if solver not in VALID_SOLVER:
+            if solver == "total":
+                smt_solver = SMTSolver()
+            elif solver == "partial":
+                smt_solver = PartialSMTSolver()
+            elif solver == "full partial":
+                smt_solver = FullPartialSMTSolver()
+            else:
                 raise InvalidSolverException(
                     solver
                     + " is not a valid solvers. Valid solvers: "
                     + str(VALID_SOLVER)
                 )
-            if solver == "total":
-                smt_solver = SMTSolver()
-            else:
-                smt_solver = PartialSMTSolver()
         else:
             smt_solver = solver
         phi = formula.get_normalized(phi, smt_solver.get_converter())
