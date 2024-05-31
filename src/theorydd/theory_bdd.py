@@ -8,14 +8,14 @@ import pydot
 from dd import cudd as cudd_bdd
 from theorydd import formula
 from theorydd._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
-from theorydd.smt_solver import SAT, SMTSolver
+from theorydd.smt_solver import SMTSolver
 from theorydd.smt_solver_full_partial import FullPartialSMTSolver
 from theorydd.smt_solver_partial import PartialSMTSolver
 from theorydd._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd.lemma_extractor import extract, find_qvars
-from theorydd.constants import SAT, UNSAT, VALID_SOLVER
+from theorydd.constants import VALID_SOLVER
 from theorydd.custom_exceptions import InvalidSolverException
 
 
@@ -68,7 +68,7 @@ class TheoryBDD:
                 smt_solver = SMTSolver()
             elif solver == "partial":
                 smt_solver = PartialSMTSolver()
-            elif solver == "full partial":
+            elif solver == "full_partial":
                 smt_solver = FullPartialSMTSolver()
             else:
                 raise InvalidSolverException(

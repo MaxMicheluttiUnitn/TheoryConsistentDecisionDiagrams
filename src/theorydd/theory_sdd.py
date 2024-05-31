@@ -7,7 +7,7 @@ from pysmt.fnode import FNode
 from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
 from theorydd.lemma_extractor import extract, find_qvars
-from theorydd.smt_solver import SMTSolver, SAT
+from theorydd.smt_solver import SMTSolver
 from theorydd.smt_solver_full_partial import FullPartialSMTSolver
 from theorydd.smt_solver_partial import PartialSMTSolver
 from theorydd._string_generator import (
@@ -17,7 +17,7 @@ from theorydd._string_generator import (
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
-from theorydd.constants import SAT, UNSAT, VALID_VTREE, VALID_SOLVER
+from theorydd.constants import VALID_VTREE, VALID_SOLVER
 from theorydd.custom_exceptions import InvalidVTreeException, InvalidSolverException
 
 
@@ -82,7 +82,7 @@ class TheorySDD:
                 smt_solver = SMTSolver()
             elif solver == "partial":
                 smt_solver = PartialSMTSolver()
-            elif solver == "full partial":
+            elif solver == "full_partial":
                 smt_solver = FullPartialSMTSolver()
             else:
                 raise InvalidSolverException(
