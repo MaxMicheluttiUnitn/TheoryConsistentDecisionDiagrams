@@ -23,7 +23,6 @@ dependencies = [
     "PySMT==0.9.6.dev53",
     "pywmi @ git+https://github.com/weighted-model-integration/pywmi@1c642518c75211d909fcfeb940085d6f12c1918f",
     "dd @ git+https://github.com/masinag/dd.git#egg=main",
-    "wmibench @ git+https://github.com/unitn-sml/wmi-benchmarks@main",
     "allsat_cnf @ git+https://github.com/masinag/allsat-cnf@main",
 ]
 

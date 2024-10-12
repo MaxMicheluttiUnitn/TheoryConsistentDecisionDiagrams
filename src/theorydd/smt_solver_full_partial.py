@@ -19,7 +19,7 @@ class FullPartialSMTSolver:
 
     def __init__(self) -> None:
         solver_options_dict = {
-            "dpll.allsat_minimize_model": "true",  # - total truth assignments
+            "dpll.allsat_minimize_model": "true",  # - partial truth assignments
             #"theory.pure_literal_filtering": "true",
             # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
@@ -39,7 +39,7 @@ class FullPartialSMTSolver:
     def check_all_sat(
         self, phi: FNode, boolean_mapping: Dict[FNode, FNode] = None
     ) -> bool:
-        """Computes All-SMT for the SMT-formula phi using partial assignment and Tsetsin CNF-ization
+        """Computes All-SMT for the SMT-formula phi generating partial assignments and using Tsetsin CNF-ization
         
         Args:
             phi (FNode): a pysmt formula
@@ -59,14 +59,14 @@ class FullPartialSMTSolver:
         phi_tsetsin = PolarityCNFizer(nnf=True, mutex_nnf_labels=True).convert_as_formula(phi)
         self.solver.add_assertion(phi_tsetsin)
 
-        partial_models = []
+        self._models = []
         mathsat.msat_all_sat(
             self.solver.msat_env(),
             self.get_converted_atoms(self._atoms),
             # self.get_converted_atoms(
             #    list(boolean_mapping.keys())),
             callback=lambda model: _allsat_callback(
-                model, self._converter, partial_models
+                model, self._converter, self._models
             ),
         )
 
@@ -78,7 +78,7 @@ class FullPartialSMTSolver:
         # phi_plus_lemmas = And(phi, *self._tlemmas)
         # self.solver_total.add_assertion(phi_plus_lemmas)
 
-        if len(partial_models) == 0:
+        if len(self._models) == 0:
             return UNSAT
         return SAT
 
