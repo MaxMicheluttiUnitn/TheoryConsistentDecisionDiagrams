@@ -17,7 +17,7 @@ from theorydd._string_generator import (
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
-from theorydd.constants import VALID_VTREE, VALID_SOLVER
+from theorydd.constants import VALID_VTREE, VALID_SOLVER, UNSAT, SAT
 from theorydd.custom_exceptions import InvalidVTreeException, InvalidSolverException
 
 
@@ -42,6 +42,7 @@ class TheorySDD:
         computation_logger: Dict = None,
         verbose: bool = False,
         load_lemmas: str | None = None,
+        sat_result: bool | None = None,
         tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
     ) -> None:
@@ -60,6 +61,7 @@ class TheorySDD:
                 This skips the All-SMT computation
             vtree_type (str) ["balanced"]: used for Vtree generation.
                 Available values in theorydd.constants.VALID_VTREE
+            sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
@@ -106,7 +108,7 @@ class TheorySDD:
             tlemmas = [formula.read_phi(load_lemmas)]
         else:
             computation_logger["T-SDD"]["ALL SMT mode"] = "computed"
-            _satisfiability, tlemmas, _bm = extract(
+            sat_result, tlemmas, _bm = extract(
                 phi,
                 smt_solver,
                 verbose=verbose,
@@ -171,52 +173,61 @@ class TheorySDD:
             print("BDD preparation phase completed in ", elapsed_time, " seconds")
         computation_logger["T-SDD"]["DD preparation time"] = elapsed_time
 
-        start_time = time.time()
-        if verbose:
-            print("Building SDD for phi...")
-        phi_sdd = walker.walk(phi)
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("SDD built in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
+        if sat_result is None or sat_result == SAT:
+            start_time = time.time()
+            if verbose:
+                print("Building SDD for phi...")
+            phi_sdd = walker.walk(phi)
+            elapsed_time = time.time() - start_time
+            if verbose:
+                print("SDD built in ", elapsed_time, " seconds")
+            computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
 
-        # BUILDING T-LEMMAS SDD
-        start_time = time.time()
-        if verbose:
-            print("Building T-SDD for big and of t-lemmas...")
-        tlemmas_sdd = walker.walk(formula.big_and(tlemmas))
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("SDD built in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
+            # BUILDING T-LEMMAS SDD
+            start_time = time.time()
+            if verbose:
+                print("Building T-SDD for big and of t-lemmas...")
+            tlemmas_sdd = walker.walk(formula.big_and(tlemmas))
+            elapsed_time = time.time() - start_time
+            if verbose:
+                print("SDD built in ", elapsed_time, " seconds")
+            computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
 
-        # QUANTIFYING OVER FRESH T-ATOMS
-        start_time = time.time()
-        if verbose:
-            print("Quantifying over fresh T-atoms...")
-        existential_map = [0]
-        for smt_atom in atom_literal_map.keys():
-            if smt_atom in self.qvars:
-                existential_map.append(1)
-            else:
-                existential_map.append(0)
-        tlemmas_sdd = self.manager.exists_multiple(
-            array("i", existential_map), tlemmas_sdd
-        )
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("Quantified over fresh T-atoms in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["fresh T-atoms quantification time"] = elapsed_time
+            # QUANTIFYING OVER FRESH T-ATOMS
+            start_time = time.time()
+            if verbose:
+                print("Quantifying over fresh T-atoms...")
+            existential_map = [0]
+            for smt_atom in atom_literal_map.keys():
+                if smt_atom in self.qvars:
+                    existential_map.append(1)
+                else:
+                    existential_map.append(0)
+            tlemmas_sdd = self.manager.exists_multiple(
+                array("i", existential_map), tlemmas_sdd
+            )
+            elapsed_time = time.time() - start_time
+            if verbose:
+                print("Quantified over fresh T-atoms in ", elapsed_time, " seconds")
+            computation_logger["T-SDD"]["fresh T-atoms quantification time"] = elapsed_time
 
-        # JOINING PHI SDD AND TLEMMAS SDD
-        start_time = time.time()
-        if verbose:
-            print("Joining phi BDD and lemmas T-SDD...")
-        self.root = phi_sdd & tlemmas_sdd
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("T-SDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["DD joining time"] = elapsed_time
+            # JOINING PHI SDD AND TLEMMAS SDD
+            start_time = time.time()
+            if verbose:
+                print("Joining phi BDD and lemmas T-SDD...")
+            self.root = phi_sdd & tlemmas_sdd
+            elapsed_time = time.time() - start_time
+            if verbose:
+                print("T-SDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
+            computation_logger["T-SDD"]["DD joining time"] = elapsed_time
+        else:
+            start_time = time.time()
+            if verbose:
+                print("Building T-SDD for UNSAT formula...")
+            self.root = walker.walk(formula.bottom())
+            if verbose:
+                print("T-SDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
+            computation_logger["T-SDD"]["UNSAT DD building time"] = elapsed_time
 
     def __len__(self) -> int:
         return max(self.root.count(), 1)

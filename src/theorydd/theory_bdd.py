@@ -15,7 +15,7 @@ from theorydd._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd.lemma_extractor import extract, find_qvars
-from theorydd.constants import VALID_SOLVER
+from theorydd.constants import VALID_SOLVER, UNSAT, SAT
 from theorydd.custom_exceptions import InvalidSolverException
 
 
@@ -37,6 +37,7 @@ class TheoryBDD:
         solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
         load_lemmas: str | None = None,
         tlemmas: List[FNode] = None,
+        sat_result: bool | None = None,
         computation_logger: Dict = None,
         verbose: bool = False,
     ) -> None:
@@ -53,6 +54,7 @@ class TheoryBDD:
                 This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
+            sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
@@ -92,7 +94,7 @@ class TheoryBDD:
             tlemmas = [formula.read_phi(load_lemmas)]
         else:
             computation_logger["T-BDD"]["ALL SMT mode"] = "computed"
-            _satisfiability, tlemmas, _bm = extract(
+            sat_result, tlemmas, _bm = extract(
                 phi,
                 smt_solver,
                 verbose=verbose,
@@ -150,56 +152,67 @@ class TheoryBDD:
         for i, item in enumerate(all_values):
             bdd_ordering[item] = i
         cudd_bdd.reorder(self.bdd, bdd_ordering)
+        walker = BDDWalker(self.mapping, self.bdd)
         elapsed_time = time.time() - start_time
         if verbose:
             print("BDD preparation phase completed in ", elapsed_time, " seconds")
         computation_logger["T-BDD"]["DD preparation time"] = elapsed_time
-        start_time = time.time()
-        if verbose:
-            print("Building BDD for phi...")
-        walker = BDDWalker(self.mapping, self.bdd)
-        phi_bdd = walker.walk(phi)
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("BDD for phi built in ", elapsed_time, " seconds")
-        computation_logger["T-BDD"]["phi DD building time"] = elapsed_time
-        start_time = time.time()
-        if verbose:
-            print("Building T-BDD for big and of t-lemmas...")
-        tlemmas_bdd = walker.walk(formula.big_and(tlemmas))
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("BDD for T-lemmas built in ", elapsed_time, " seconds")
-        computation_logger["T-BDD"]["t-lemmas DD building time"] = elapsed_time
-
-        # ENUMERATING OVER FRESH T-ATOMS
-        if len(mapped_qvars) > 0:
+        if sat_result is None or sat_result == SAT:
             start_time = time.time()
             if verbose:
-                print("Enumerating over fresh T-atoms...")
-            tlemmas_bdd = cudd_bdd.and_exists(tlemmas_bdd, self.bdd.true, mapped_qvars)
+                print("Building BDD for phi...")
+            phi_bdd = walker.walk(phi)
             elapsed_time = time.time() - start_time
             if verbose:
-                print(
-                    "fresh T-atoms quantification completed in ",
-                    elapsed_time,
-                    " seconds",
-                )
-            computation_logger["T-BDD"][
-                "fresh T-atoms quantification time"
-            ] = elapsed_time
-        else:
-            computation_logger["T-BDD"]["fresh T-atoms quantification time"] = 0
+                print("BDD for phi built in ", elapsed_time, " seconds")
+            computation_logger["T-BDD"]["phi DD building time"] = elapsed_time
+            
+            start_time = time.time()
+            if verbose:
+                print("Building T-BDD for big and of t-lemmas...")
+            tlemmas_bdd = walker.walk(formula.big_and(tlemmas))
+            elapsed_time = time.time() - start_time
+            if verbose:
+                print("BDD for T-lemmas built in ", elapsed_time, " seconds")
+            computation_logger["T-BDD"]["t-lemmas DD building time"] = elapsed_time
 
-        # JOINING PHI BDD AND TLEMMAS BDD
-        start_time = time.time()
-        if verbose:
-            print("Joining phi BDD and lemmas T-BDD...")
-        self.root = phi_bdd & tlemmas_bdd
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
-        computation_logger["T-BDD"]["DD joining time"] = elapsed_time
+            # ENUMERATING OVER FRESH T-ATOMS
+            if len(mapped_qvars) > 0:
+                start_time = time.time()
+                if verbose:
+                    print("Enumerating over fresh T-atoms...")
+                tlemmas_bdd = cudd_bdd.and_exists(tlemmas_bdd, self.bdd.true, mapped_qvars)
+                elapsed_time = time.time() - start_time
+                if verbose:
+                    print(
+                        "fresh T-atoms quantification completed in ",
+                        elapsed_time,
+                        " seconds",
+                    )
+                computation_logger["T-BDD"][
+                    "fresh T-atoms quantification time"
+                ] = elapsed_time
+            else:
+                computation_logger["T-BDD"]["fresh T-atoms quantification time"] = 0
+            # JOINING PHI BDD AND TLEMMAS BDD
+            start_time = time.time()
+            if verbose:
+                print("Joining phi BDD and lemmas T-BDD...")
+            self.root = phi_bdd & tlemmas_bdd
+            elapsed_time = time.time() - start_time
+            if verbose:
+                print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
+            computation_logger["T-BDD"]["DD joining time"] = elapsed_time
+        else:
+            start_time = time.time()
+            if verbose:
+                print("Building T-BDD for UNSAT formula...")
+            self.root = walker.walk(formula.bottom())
+            if verbose:
+                print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
+            computation_logger["T-BDD"]["UNSAT DD building time"] = elapsed_time
+        
+        
 
     def __len__(self) -> int:
         return len(self.root)
