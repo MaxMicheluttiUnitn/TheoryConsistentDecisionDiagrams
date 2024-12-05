@@ -1,6 +1,10 @@
 """this module simplifies interactions with the pysmt library for handling SMT formulas"""
 
-from typing import List, Dict, Set
+from io import StringIO
+import json
+import os
+
+from typing import List, Dict, Set, Tuple
 from pysmt.shortcuts import (
     Symbol as _Symbol,
     REAL as _REAL,
@@ -16,6 +20,8 @@ from pysmt.shortcuts import (
     FALSE as _FALSE,
 )
 from pysmt.fnode import FNode
+from pysmt.smtlib.script import smtlibscript_from_formula as _script_from_formula
+from pysmt.smtlib.parser.parser import get_formula as _get_formula
 from theorydd._string_generator import SequentialStringGenerator
 
 from theorydd.normalizer import NormalizerWalker
@@ -200,3 +206,62 @@ def big_and(nodes: List[FNode]) -> FNode:
     elif len(nodes) == 1:
         return nodes[0]
     return _And(*nodes)
+
+def save_mapping(mapping: Dict[int, FNode], mapping_path: str) -> None:
+    """
+    Saves a mapping from integers to pysmt atoms in a file.
+    This mapping is used to define the REFINEMENT function
+
+    Args:
+        mapping (Dict[int,FNode]) -> a mapping that associates to integers a pysmt atom
+        mapping_path (str) -> the path to the folder where the mapping file will be saved
+    """
+    if not os.path.exists(mapping_path):
+        raise FileNotFoundError(
+            f"The path {mapping_path} does not exist. Please create it before saving the mapping."
+        )
+
+    # collect serialized mapping items
+    mapping_items: List[Tuple[int, str]] = []
+    for k, v in mapping.items():
+        # serialize formula into SMTlib script and read it on a string stream
+        script = _script_from_formula(v)
+        output_stream = StringIO()
+        script.serialize(output_stream)
+        serialized_item = output_stream.getvalue()
+        # add serialized item to list
+        mapping_items.append((k, serialized_item))
+
+    # write mapping_items in mapping.json file
+    mapping_file = f"{mapping_path}/mapping.json"
+    with open(mapping_file, "w", encoding='utf8') as out:
+        json.dump(mapping_items, out)
+
+
+def load_mapping(mapping_path: str) -> Dict[int, FNode]:
+    """
+    Loads a mapping from integers to pysmt atoms from a file.
+    This mapping is used to define the REFINEMENT function
+
+    Args:
+        mapping_path (str) -> the path to the folder where the mapping is saved
+
+    Returns:
+        (Dict[int,FNode]) -> a mapping that associates to integers a pysmt atom
+    """
+    if not os.path.exists(mapping_path):
+        raise FileNotFoundError(
+            f"The path {mapping_path} does not exist. Please create it before loading the mapping."
+        )
+
+    mapping: Dict[int, FNode] = {}
+    with open(mapping_path,"r",encoding='utf8') as input_data:
+        mapping_items: List[Tuple[int,str]] = json.load(input_data)
+        for item in mapping_items:
+            key = item[0]
+            serialized_formula = item[1]
+            # read serialized formula from string stream
+            input_stream = StringIO(serialized_formula)
+            mapping[key] = _get_formula(input_stream)
+    return mapping
+            
