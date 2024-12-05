@@ -39,8 +39,7 @@ def default_phi() -> FNode:
     right_xor = _Or(x3 > x4, x4 > x3)
     phi = _And(left_xor, right_xor, _Xor(x1 > x4, x4 > x1), a)
 
-    # phi = Xor(x1>x4,x4>x1)
-    # [(x>0) ∧ (x<1)] ∧ [(y<1) ∨ ((x>y) ∧ (y>1/2))]
+    # phi = [(x>0) ∧ (x<1)] ∧ [(y<1) ∨ ((x>y) ∧ (y>1/2))]
     phi = _And(
         _And(_LT(_Real(0), x1), _LT(x1, _Real(1))),
         _Or(_LT(x2, _Real(1)), _And(_LT(x2, x1), _LT(_Real(0.5), x2))),
@@ -194,7 +193,8 @@ def big_and(nodes: List[FNode]) -> FNode:
         nodes (List[FNode]): a list of pysmt formulas
 
     Returns:
-        FNode: the big and of all the nodes"""
+        FNode: the big and of all the nodes. 
+        If no atom is provided, this function returns the FNode for TRUE"""
     if len(nodes) == 0:
         return _TRUE()
     elif len(nodes) == 1:
