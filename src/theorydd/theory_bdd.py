@@ -58,7 +58,9 @@ class TheoryBDD:
             tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
             verbose (bool) [False]: set it to True to log computation on stdout
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info. 
+            build_immediately (bool) [True]: set it to False to build the BDD later. IF SET TO FALSE
+                ALL OTHER PARAMETERS WILL BE IGNORED!
         """
         if build_immediately:
             self.build(
@@ -69,6 +71,7 @@ class TheoryBDD:
                 computation_logger,
                 verbose,
             )
+            self.built_successfully = True
 
     def build(
         self,
@@ -240,12 +243,13 @@ class TheoryBDD:
         if verbose:
             print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
         computation_logger["T-BDD"]["DD joining time"] = elapsed_time
-        self.built_successfully = True
 
     def __len__(self) -> int:
         """returns the number of nodes in the T-BDD"""
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built yet, and its size cannot be computed. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built yet, and its size cannot be computed. Build the T-BDD first!"
+            )
         return len(self.root)
 
     def count_nodes(self) -> int:
@@ -259,7 +263,9 @@ class TheoryBDD:
     def count_models(self) -> int:
         """returns the amount of models in the T-BDD"""
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built yet, so model enumeration cannot be performed. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built yet, so model enumeration cannot be performed. Build the T-BDD first!"
+            )
         return self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
 
     def dump(
@@ -279,7 +285,9 @@ class TheoryBDD:
                 full names of atoms
         """
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built, and cannot be dumped. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built, and cannot be dumped. Build the T-BDD first!"
+            )
         temporary_dot = "bdd_temporary_dot.dot"
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
         if print_mapping:
@@ -304,13 +312,17 @@ class TheoryBDD:
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built, the mapping cannot be retrieved. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built, the mapping cannot be retrieved. Build the T-BDD first!"
+            )
         return self.mapping
 
     def pick(self) -> Dict[FNode, bool] | None:
         """Returns a partial model of the encoded formula"""
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built, a model cannot be extracted. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built, a model cannot be extracted. Build the T-BDD first!"
+            )
         if self.root == self.bdd.false:
             return None
         return self._convert_assignment(self.root.pick())
@@ -322,7 +334,9 @@ class TheoryBDD:
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """Returns all partial models of the encoded formula"""
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built, models cannot be extracted. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built, models cannot be extracted. Build the T-BDD first!"
+            )
         if self.root == self.bdd.false:
             return []
         items = list(self.bdd.pick_iter(self.root))
@@ -335,7 +349,9 @@ class TheoryBDD:
             file_path (str): the path to the output file
         """
         if not self.built_successfully:
-            raise NotReadyException("The T-BDD has not been built, it cannot be serialized. Build the T-BDD first!")
+            raise NotReadyException(
+                "The T-BDD has not been built, it cannot be serialized. Build the T-BDD first!"
+            )
         # CHECK IF FOLDER EXISTS AND CREATE IT IF NOT
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -345,7 +361,7 @@ class TheoryBDD:
         )
         # SAVE QVARS
         qvars_indexes = [self.mapping[qvar] for qvar in self.qvars]
-        with open(f"{folder_path}/qvars.qvars", "w", encoding='utf8') as out:
+        with open(f"{folder_path}/qvars.qvars", "w", encoding="utf8") as out:
             json.dump(qvars_indexes, out)
         # SAVE DD
         _cudd_dump(self.root, f"{folder_path}/bdd_data")
@@ -369,9 +385,8 @@ def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
     result.bdd.declare(*result.mapping.values())
     result.root = _cudd_load(f"{folder_path}/bdd_data", result.bdd)
     # load qvars
-    with open(f"{folder_path}/qvars.qvars", "r", encoding='utf8') as input_data:
+    with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
         qvars_indexes = json.load(input_data)
         result.qvars = [reverse_mapping[qvar_id] for qvar_id in qvars_indexes]
     result.built_successfully = True
     return result
-

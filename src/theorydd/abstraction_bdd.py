@@ -1,5 +1,6 @@
 """abstraction BDD module"""
 
+import json
 import time
 import os
 from typing import Dict, List
@@ -13,10 +14,12 @@ from theorydd._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
+from theorydd._utils import cudd_dump as _cudd_dump, cudd_load as _cudd_load
+
 
 class AbstractionBDD:
     """Python class to generate and handle abstraction BDDs.
-    
+
     Abstraction BDDs are BDDs of the boolean abstraction of a normalized
     T-formula. They represent all the models of the abstraction
     of the formula i. e. all the truth assignments to boolean atoms and
@@ -26,9 +29,33 @@ class AbstractionBDD:
 
     bdd: cudd_bdd.BDD
     root: cudd_bdd.Function
-    mapping: Dict
+    mapping: Dict[FNode, object]
+    built_successfully: bool = False
 
     def __init__(
+        self,
+        phi: FNode,
+        solver: str = "total",
+        computation_logger: Dict = None,
+        verbose: bool = False,
+        build_immediately: bool = True,
+    ):
+        """
+        builds an AbstractionBDD
+
+        Args:
+            phi (FNode): a pysmt formula
+            solver (str) ["partial"]: used for T-atoms normalization, can be set to total or partial
+            verbose (bool) [False]: set it to True to log computation on stdout
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+            build_immediately (bool) [True]: set it to False to build the BDD later. IF SET TO FALSE
+                ALL OTHER PARAMETERS WILL BE IGNORED!
+        """
+        if build_immediately:
+            self.build(phi, solver, computation_logger, verbose)
+            self.built_successfully = True
+
+    def build(
         self,
         phi: FNode,
         solver: str = "total",
@@ -73,7 +100,9 @@ class AbstractionBDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("Mapping created in ", elapsed_time, " seconds")
-        computation_logger["Abstraction BDD"]["variable mapping creation time"] = elapsed_time
+        computation_logger["Abstraction BDD"][
+            "variable mapping creation time"
+        ] = elapsed_time
 
         # BUILDING ACTUAL BDD
         start_time = time.time()
@@ -119,10 +148,10 @@ class AbstractionBDD:
         dump_abstraction: bool = False,
     ) -> None:
         """Save the AbstractionBDD on a file with Graphviz
-        
+
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping 
+            print_mapping (bool) [False]: set it to True to print the mapping
                 between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
@@ -148,7 +177,7 @@ class AbstractionBDD:
         else:
             print("Unable to dump BDD file: format not unsupported")
             return
-        
+
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
         return self.mapping
@@ -169,3 +198,38 @@ class AbstractionBDD:
             return []
         items = list(self.bdd.pick_iter(self.root))
         return [self._convert_assignment(i) for i in items]
+
+    def save_to_folder(self, folder_path: str) -> None:
+        """Saves the Abstraction BDD to a folder
+
+        Args:
+            folder_path (str): the path to the folder where the BDD will be saved
+        """
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        # SAVE MAPPING
+        formula.save_abstraction_function(
+            self.mapping, f"{folder_path}/abstraction.json"
+        )
+        # SAVE BDD
+        _cudd_dump(self.root, f"{folder_path}/abstraction_bdd_data")
+
+
+def abstraction_bdd_load_from_folder(folder_path: str) -> AbstractionBDD:
+    """Loads an Abstraction BDD from a folder
+
+    Args:
+        folder_path (str): the path to the folder where the BDD is saved
+
+    Returns:
+        (AbstractionBDD) -> the Abstraction BDD loaded from the folder
+    """
+    result = AbstractionBDD(None, build_immediately=False)
+    result.mapping = formula.load_abstraction_function(
+        f"{folder_path}/abstraction.json"
+    )
+    result.bdd = cudd_bdd.BDD()
+    result.bdd.declare(*result.mapping.values())
+    result.root = _cudd_load(f"{folder_path}/abstraction_bdd_data", result.bdd)
+    result.built_successfully = True
+    return result
