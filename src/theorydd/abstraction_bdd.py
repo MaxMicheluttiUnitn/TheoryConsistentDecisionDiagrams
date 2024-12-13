@@ -1,6 +1,5 @@
 """abstraction BDD module"""
 
-import json
 import time
 import os
 from typing import Dict, List
