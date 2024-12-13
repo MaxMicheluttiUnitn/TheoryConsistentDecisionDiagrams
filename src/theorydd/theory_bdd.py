@@ -363,7 +363,7 @@ class TheoryBDD:
         with open(f"{folder_path}/qvars.qvars", "w", encoding="utf8") as out:
             json.dump(qvars_indexes, out)
         # SAVE DD
-        _cudd_dump(self.root, f"{folder_path}/bdd_data")
+        _cudd_dump(self.root, f"{folder_path}/tbdd_data")
 
 
 def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
@@ -382,7 +382,7 @@ def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
     reverse_mapping = dict((v, k) for k, v in result.mapping.items())
     result.bdd = cudd_bdd.BDD()
     result.bdd.declare(*result.mapping.values())
-    result.root = _cudd_load(f"{folder_path}/bdd_data", result.bdd)
+    result.root = _cudd_load(f"{folder_path}/tbdd_data", result.bdd)
     # load qvars
     with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
         qvars_indexes = json.load(input_data)
