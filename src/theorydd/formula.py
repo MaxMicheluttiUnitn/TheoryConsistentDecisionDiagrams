@@ -207,22 +207,18 @@ def big_and(nodes: List[FNode]) -> FNode:
         return nodes[0]
     return _And(*nodes)
 
-def save_mapping(mapping: Dict[int, FNode], mapping_path: str) -> None:
+def save_refinement(mapping: Dict[object, FNode], mapping_file: str) -> None:
     """
-    Saves a mapping from integers to pysmt atoms in a file.
+    Saves a mapping from objects to pysmt atoms in a file.
     This mapping is used to define the REFINEMENT function
 
     Args:
-        mapping (Dict[int,FNode]) -> a mapping that associates to integers a pysmt atom
-        mapping_path (str) -> the path to the folder where the mapping file will be saved
+        mapping (Dict[object,FNode]) -> a mapping that associates to objects a pysmt atom
+        mapping_file (str) -> the path to the file where the mapping file will be saved
     """
-    if not os.path.exists(mapping_path):
-        raise FileNotFoundError(
-            f"The path {mapping_path} does not exist. Please create it before saving the mapping."
-        )
 
     # collect serialized mapping items
-    mapping_items: List[Tuple[int, str]] = []
+    mapping_items: List[Tuple[object, str]] = []
     for k, v in mapping.items():
         # serialize formula into SMTlib script and read it on a string stream
         script = _script_from_formula(v)
@@ -232,29 +228,52 @@ def save_mapping(mapping: Dict[int, FNode], mapping_path: str) -> None:
         # add serialized item to list
         mapping_items.append((k, serialized_item))
 
-    # write mapping_items in mapping.json file
-    mapping_file = f"{mapping_path}/mapping.json"
+    # write mapping_items in mapping file
+    with open(mapping_file, "w", encoding='utf8') as out:
+        json.dump(mapping_items, out)
+
+def save_abstraction_function(mapping: Dict[FNode, object], mapping_file: str) -> None:
+    """
+    Saves a mapping from pysmt atoms to objects in a file.
+    This mapping is used to define the ABSTRACTION function
+
+    Args:
+        mapping (Dict[FNode,object]) -> a mapping that associates to each pysmt atom an object
+        mapping_file (str) -> the path to the file where the mapping file will be saved
+    """
+    # collect serialized mapping items
+    mapping_items: List[Tuple[str,object]] = []
+    for k, v in mapping.items():
+        # serialize formula into SMTlib script and read it on a string stream
+        script = _script_from_formula(k)
+        output_stream = StringIO()
+        script.serialize(output_stream)
+        serialized_item = output_stream.getvalue()
+        # add serialized item to list
+        mapping_items.append((serialized_item,v))
+
+    # write mapping_items in mapping file
     with open(mapping_file, "w", encoding='utf8') as out:
         json.dump(mapping_items, out)
 
 
-def load_mapping(mapping_path: str) -> Dict[int, FNode]:
+def load_refinement(mapping_path: str) -> Dict[object, FNode]:
     """
-    Loads a mapping from integers to pysmt atoms from a file.
+    Loads a mapping from objects to pysmt atoms from a file.
     This mapping is used to define the REFINEMENT function
 
     Args:
         mapping_path (str) -> the path to the folder where the mapping is saved
 
     Returns:
-        (Dict[int,FNode]) -> a mapping that associates to integers a pysmt atom
+        (Dict[object,FNode]) -> a mapping that associates to objects a pysmt atom
     """
     if not os.path.exists(mapping_path):
         raise FileNotFoundError(
             f"The path {mapping_path} does not exist. Please create it before loading the mapping."
         )
 
-    mapping: Dict[int, FNode] = {}
+    mapping: Dict[object,FNode] = {}
     with open(mapping_path,"r",encoding='utf8') as input_data:
         mapping_items: List[Tuple[int,str]] = json.load(input_data)
         for item in mapping_items:
@@ -263,5 +282,32 @@ def load_mapping(mapping_path: str) -> Dict[int, FNode]:
             # read serialized formula from string stream
             input_stream = StringIO(serialized_formula)
             mapping[key] = _get_formula(input_stream)
+    return mapping
+
+def load_abstraction_function(mapping_path: str) -> Dict[FNode, object]:
+    """
+    Loads a mapping from pysmt atoms to objects from a file.
+    This mapping is used to define the ABSTRACTION function
+
+    Args:
+        mapping_path (str) -> the path to the folder where the mapping is saved
+
+    Returns:
+        (Dict[FNode,object]) -> a mapping that associates to each pysmt atom an object
+    """
+    if not os.path.exists(mapping_path):
+        raise FileNotFoundError(
+            f"The path {mapping_path} does not exist. Please create it before loading the mapping."
+        )
+
+    mapping: Dict[FNode,object] = {}
+    with open(mapping_path,"r",encoding='utf8') as input_data:
+        mapping_items: List[Tuple[int,str]] = json.load(input_data)
+        for item in mapping_items:
+            key = item[1]
+            serialized_formula = item[0]
+            # read serialized formula from string stream
+            input_stream = StringIO(serialized_formula)
+            mapping[_get_formula(input_stream)] = key
     return mapping
             

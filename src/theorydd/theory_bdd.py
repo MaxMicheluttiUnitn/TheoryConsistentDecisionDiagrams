@@ -1,5 +1,7 @@
 """theory BDD module"""
 
+import json
+import pickle
 import time
 import os
 from typing import Dict, List
@@ -29,9 +31,45 @@ class TheoryBDD:
     bdd: cudd_bdd.BDD
     root: cudd_bdd.Function
     qvars: List[FNode]
-    mapping: Dict
+    mapping: Dict[FNode, object]
 
     def __init__(
+        self,
+        phi: FNode,
+        solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
+        load_lemmas: str | None = None,
+        tlemmas: List[FNode] = None,
+        computation_logger: Dict = None,
+        verbose: bool = False,
+        build_immediately: bool = True,
+    ) -> None:
+        """Builds a T-BDD. The construction requires the
+        computation of All-SMT for the provided formula to
+        extract T-lemmas and the subsequent construction of
+        a BDD of phi & lemmas
+
+        Args:
+            phi (FNode) : a pysmt formula
+            solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
+                Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
+            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
+                This skips the All-SMT computation
+            tlemmas (List[Fnode]): use previously computed tlemmas.
+                This skips the All-SMT computation
+            verbose (bool) [False]: set it to True to log computation on stdout
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+        """
+        if build_immediately:
+            self.build(
+                phi,
+                solver,
+                load_lemmas,
+                tlemmas,
+                computation_logger,
+                verbose,
+            )
+
+    def build(
         self,
         phi: FNode,
         solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
@@ -173,6 +211,7 @@ class TheoryBDD:
         computation_logger["T-BDD"]["t-lemmas DD building time"] = elapsed_time
 
         # ENUMERATING OVER FRESH T-ATOMS
+        print(mapped_qvars)
         if len(mapped_qvars) > 0:
             start_time = time.time()
             if verbose:
@@ -273,3 +312,91 @@ class TheoryBDD:
             return []
         items = list(self.bdd.pick_iter(self.root))
         return [self._convert_assignment(i) for i in items]
+
+    def save_to_folder(self, folder_path: str) -> None:
+        """Save all the T-BDD data inside files in the specified folder
+
+        Args:
+            file_path (str): the path to the output file
+        """
+        # CHECK IF FOLDER EXISTS AND CREATE IT IF NOT
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        # SAVE MAPPING
+        formula.save_abstraction_function(
+            self.mapping, f"{folder_path}/abstraction.json"
+        )
+        # SAVE QVARS
+        qvars_indexes = [self.mapping[qvar] for qvar in self.qvars]
+        with open(f"{folder_path}/qvars.qvars", "w", encoding='utf8') as out:
+            json.dump(qvars_indexes, out)
+        # SAVE DD
+        _cudd_dump(self.root, f"{folder_path}/bdd_data")
+
+
+def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
+    """Load a T-BDD from a file
+
+    Args:
+        file_path (str): the path to the file
+
+    Returns:
+        TheoryBDD: the T-BDD loaded from the file
+    """
+    result = TheoryBDD(None, build_immediately=False)
+    result.mapping = formula.load_abstraction_function(
+        f"{folder_path}/abstraction.json"
+    )
+    reverse_mapping = dict((v, k) for k, v in result.mapping.items())
+    result.bdd = cudd_bdd.BDD()
+    result.bdd.declare(*result.mapping.values())
+    result.root = _cudd_load(f"{folder_path}/bdd_data", result.bdd)
+    # load qvars
+    with open(f"{folder_path}/qvars.qvars", "r", encoding='utf8') as input_data:
+        qvars_indexes = json.load(input_data)
+        result.qvars = [reverse_mapping[qvar_id] for qvar_id in qvars_indexes]
+    return result
+
+
+def _cudd_load(file_name: str, bdd: cudd_bdd.BDD) -> cudd_bdd.Function:
+    """Unpickle variable order and load dddmp file.
+
+    Loads the variable order,
+    reorders `bdd` to match that order,
+    turns off reordering,
+    then loads the BDD,
+    restores reordering.
+    Assumes that:
+
+      - `file_name` has no extension
+      - pickle file name: `file_name.pickle`
+      - dddmp file name: `file_name.dddmp`
+
+    @param reordering:
+        if `True`,
+        then enable reordering during DDDMP load.
+    """
+    pickle_fname = f"{file_name}.pickle"
+    dddmp_fname = f"{file_name}.dddmp"
+    with open(pickle_fname, "rb") as f:
+        d = pickle.load(f)
+    order = d["variable_order"]
+    for var in order:
+        bdd.add_var(var)
+    cudd_bdd.reorder(bdd, order)
+    cfg = bdd.configure(reordering=False)
+    u = bdd.load(dddmp_fname)
+    bdd.configure(reordering=cfg["reordering"])
+    return u[0]
+
+
+def _cudd_dump(root: object, file_name: str) -> None:
+    """Pickle variable order and dump dddmp file."""
+    bdd = root.bdd
+    pickle_fname = f"{file_name}.pickle"
+    dddmp_fname = f"{file_name}.dddmp"
+    order = {var: bdd.level_of_var(var) for var in bdd.vars}
+    d = dict(variable_order=order)
+    with open(pickle_fname, "wb") as f:
+        pickle.dump(d, f, protocol=2)
+    bdd.dump(dddmp_fname, [root])
