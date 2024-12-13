@@ -215,7 +215,6 @@ class TheoryBDD:
         computation_logger["T-BDD"]["t-lemmas DD building time"] = elapsed_time
 
         # ENUMERATING OVER FRESH T-ATOMS
-        print(mapped_qvars)
         if len(mapped_qvars) > 0:
             start_time = time.time()
             if verbose:
