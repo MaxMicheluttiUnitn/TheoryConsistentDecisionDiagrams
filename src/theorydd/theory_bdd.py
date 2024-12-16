@@ -18,7 +18,7 @@ from theorydd.formula import get_atoms
 from theorydd.walker_bdd import BDDWalker
 from theorydd.lemma_extractor import extract, find_qvars
 from theorydd.constants import VALID_SOLVER
-from theorydd.custom_exceptions import InvalidSolverException, NotReadyException
+from theorydd.custom_exceptions import InvalidSolverException
 
 
 class TheoryBDD:
@@ -32,7 +32,6 @@ class TheoryBDD:
     root: cudd_bdd.Function
     qvars: List[FNode]
     mapping: Dict[FNode, object]
-    built_successfully: bool = False
 
     def __init__(
         self,
@@ -42,7 +41,7 @@ class TheoryBDD:
         tlemmas: List[FNode] = None,
         computation_logger: Dict = None,
         verbose: bool = False,
-        build_immediately: bool = True,
+        folder_name: str | None = None,
     ) -> None:
         """Builds a T-BDD. The construction requires the
         computation of All-SMT for the provided formula to
@@ -52,52 +51,19 @@ class TheoryBDD:
         Args:
             phi (FNode) : a pysmt formula
             solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
-                Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
+                Valid solvers are "partial", "total" and "full_partial", or you can pass an instance of a SMTSolver or PartialSMTSolver
             load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info. 
-            build_immediately (bool) [True]: set it to False to build the BDD later. IF SET TO FALSE
-                ALL OTHER PARAMETERS WILL BE IGNORED!
+            folder_name (str | None) [None]: the path to a folder where data to load the T-BDD is stored.
+                If this is not None, then all other parameters are ignored
         """
-        if build_immediately:
-            self.build(
-                phi,
-                solver,
-                load_lemmas,
-                tlemmas,
-                computation_logger,
-                verbose,
-            )
-            self.built_successfully = True
-
-    def build(
-        self,
-        phi: FNode,
-        solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
-        load_lemmas: str | None = None,
-        tlemmas: List[FNode] = None,
-        computation_logger: Dict = None,
-        verbose: bool = False,
-    ) -> None:
-        """Builds a T-BDD. The construction requires the
-        computation of All-SMT for the provided formula to
-        extract T-lemmas and the subsequent construction of
-        a BDD of phi & lemmas
-
-        Args:
-            phi (FNode) : a pysmt formula
-            solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
-                Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
-            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
-                This skips the All-SMT computation
-            tlemmas (List[Fnode]): use previously computed tlemmas.
-                This skips the All-SMT computation
-            verbose (bool) [False]: set it to True to log computation on stdout
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
-        """
+        if folder_name is not None:
+            self._load_from_folder(folder_name)
+            return
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("T-BDD") is None:
@@ -245,10 +211,6 @@ class TheoryBDD:
 
     def __len__(self) -> int:
         """returns the number of nodes in the T-BDD"""
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built yet, and its size cannot be computed. Build the T-BDD first!"
-            )
         return len(self.root)
 
     def count_nodes(self) -> int:
@@ -261,10 +223,6 @@ class TheoryBDD:
 
     def count_models(self) -> int:
         """returns the amount of models in the T-BDD"""
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built yet, so model enumeration cannot be performed. Build the T-BDD first!"
-            )
         return self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
 
     def dump(
@@ -283,10 +241,6 @@ class TheoryBDD:
                 with the names of the abstraction of the atoms instead of the
                 full names of atoms
         """
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built, and cannot be dumped. Build the T-BDD first!"
-            )
         temporary_dot = "bdd_temporary_dot.dot"
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
         if print_mapping:
@@ -310,18 +264,10 @@ class TheoryBDD:
 
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built, the mapping cannot be retrieved. Build the T-BDD first!"
-            )
         return self.mapping
 
     def pick(self) -> Dict[FNode, bool] | None:
         """Returns a partial model of the encoded formula"""
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built, a model cannot be extracted. Build the T-BDD first!"
-            )
         if self.root == self.bdd.false:
             return None
         return self._convert_assignment(self.root.pick())
@@ -332,10 +278,6 @@ class TheoryBDD:
 
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """Returns all partial models of the encoded formula"""
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built, models cannot be extracted. Build the T-BDD first!"
-            )
         if self.root == self.bdd.false:
             return []
         items = list(self.bdd.pick_iter(self.root))
@@ -347,10 +289,6 @@ class TheoryBDD:
         Args:
             file_path (str): the path to the output file
         """
-        if not self.built_successfully:
-            raise NotReadyException(
-                "The T-BDD has not been built, it cannot be serialized. Build the T-BDD first!"
-            )
         # CHECK IF FOLDER EXISTS AND CREATE IT IF NOT
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -365,6 +303,25 @@ class TheoryBDD:
         # SAVE DD
         _cudd_dump(self.root, f"{folder_path}/tbdd_data")
 
+    def _load_from_folder(self, folder_path: str) -> None:
+        """Load a T-BDD from a folder
+
+        Args:
+            folder_path (str): the path to the folder where the data is stored
+        """
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError(
+                f"Folder {folder_path} does not exist, cannot load T-BDD"
+            )
+        self.mapping = formula.load_abstraction_function(f"{folder_path}/abstraction.json")
+        reverse_mapping = dict((v, k) for k, v in self.mapping.items())
+        self.bdd = cudd_bdd.BDD()
+        self.bdd.declare(*self.mapping.values())
+        self.root = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
+        # load qvars
+        with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
+            qvars_indexes = json.load(input_data)
+            self.qvars = [reverse_mapping[qvar_id] for qvar_id in qvars_indexes]
 
 def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
     """Load a T-BDD from a file
@@ -375,17 +332,4 @@ def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
     Returns:
         TheoryBDD: the T-BDD loaded from the file
     """
-    result = TheoryBDD(None, build_immediately=False)
-    result.mapping = formula.load_abstraction_function(
-        f"{folder_path}/abstraction.json"
-    )
-    reverse_mapping = dict((v, k) for k, v in result.mapping.items())
-    result.bdd = cudd_bdd.BDD()
-    result.bdd.declare(*result.mapping.values())
-    result.root = _cudd_load(f"{folder_path}/tbdd_data", result.bdd)
-    # load qvars
-    with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
-        qvars_indexes = json.load(input_data)
-        result.qvars = [reverse_mapping[qvar_id] for qvar_id in qvars_indexes]
-    result.built_successfully = True
-    return result
+    return TheoryBDD(None,folder_name=folder_path)

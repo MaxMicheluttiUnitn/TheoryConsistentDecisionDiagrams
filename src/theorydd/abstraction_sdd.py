@@ -1,5 +1,6 @@
 """abstraction SDD module"""
 
+import os
 import time
 from typing import Dict, List, Set
 from pysmt.fnode import FNode
@@ -13,6 +14,7 @@ from theorydd._string_generator import (
 )
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
+from theorydd.theory_sdd import vtree_load_from_folder as _vtree_load_from_folder
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
 
 
@@ -32,14 +34,13 @@ class AbstractionSDD:
     name_to_atom_map: Dict  # NEEDED FOR SERIALIZATION
     vtree: Vtree
 
-    def __init__(
-        self,
+    def __init__(self,
         phi: FNode,
         solver: str = "total",
         vtree_type: str = "balanced",
         verbose: bool = False,
         computation_logger: Dict = None,
-    ) -> None:
+        folder_name: str | None = None):
         """
         builds an AbstractionSDD
 
@@ -49,7 +50,12 @@ class AbstractionSDD:
             vtree_type (str) ["balanced"]: used for Vtree generation. Available values in theorydd.constants.VALID_VTREE
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+            folder_name (str | None) [None]: the path to a folder where data to load the AbstractionSDD is stored.
+                If this is not None, then all other parameters are ignored
         """
+        if folder_name is not None:
+            self._load_from_folder(folder_name)
+            return
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("Abstraction SDD") is None:
@@ -57,6 +63,7 @@ class AbstractionSDD:
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
+        # THE SOLVER IS ONLY USED FOR ATOM NORMALIZATION
         if solver == "total":
             smt_solver = SMTSolver()
         else:
@@ -190,3 +197,53 @@ class AbstractionSDD:
                 output_file,
                 " is not supported",
             )
+
+    def save_to_folder(self, folder_path: str) -> None:
+        """Save the T-SDD in the specified solver
+
+        Args:
+            folder_path (str): the path to the output folder
+        """
+        # check if folder exists
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        # save vtree
+        self.save_vtree_to_folder(folder_path)
+        # save mapping
+        formula.save_abstraction_function(self.mapping, folder_path+"/abstraction.json")
+        # save sdd
+        self.root.save(str.encode(folder_path+"/sdd.sdd"))
+
+    def save_vtree_to_folder(self, folder_path: str) -> None:
+        """Save the V-Tree in the specified folder
+
+        Args:
+            folder_path (str): the path to the output folder
+        """
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        self.vtree.save(str.encode(folder_path+"/vtree.vtree"))
+
+    def _load_from_folder(self, folder_path: str) -> None:
+        """
+        Load an AbstractionSDD from a folder
+        
+        Args:
+            folder_path (str): the path to the folder where the data is stored
+        """
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError(f"Folder {folder_path} does not exist, cannot load AbstractionSDD")
+        self.vtree = _vtree_load_from_folder(folder_path)
+        self.manager = SddManager.from_vtree(self.vtree)
+        self.root = self.manager.read_sdd_file(str.encode(f"{folder_path}/sdd.sdd"))
+        self.mapping = formula.load_abstraction_function(folder_path+"/abstraction.json")
+        self.name_to_atom_map = {v: k for k, v in self.mapping.items()}
+
+def abstraction_sdd_load_from_folder(folder_path: str) -> AbstractionSDD:
+    """
+    Load an AbstractionSDD from a folder
+    
+    Args:
+        folder_path (str): the path to the folder where the data is stored
+    """
+    return AbstractionSDD(None, folder_name=folder_path)

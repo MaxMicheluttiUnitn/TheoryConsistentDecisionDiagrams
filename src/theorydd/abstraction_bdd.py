@@ -29,7 +29,6 @@ class AbstractionBDD:
     bdd: cudd_bdd.BDD
     root: cudd_bdd.Function
     mapping: Dict[FNode, object]
-    built_successfully: bool = False
 
     def __init__(
         self,
@@ -37,7 +36,7 @@ class AbstractionBDD:
         solver: str = "total",
         computation_logger: Dict = None,
         verbose: bool = False,
-        build_immediately: bool = True,
+        folder_name: str | None = None,
     ):
         """
         builds an AbstractionBDD
@@ -47,29 +46,12 @@ class AbstractionBDD:
             solver (str) ["partial"]: used for T-atoms normalization, can be set to total or partial
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
-            build_immediately (bool) [True]: set it to False to build the BDD later. IF SET TO FALSE
-                ALL OTHER PARAMETERS WILL BE IGNORED!
+            folder_name (str | None) [None]: the path to a folder where data to load the AbstractionBDD is stored.
+                If this is not None, then all other parameters are ignored
         """
-        if build_immediately:
-            self.build(phi, solver, computation_logger, verbose)
-            self.built_successfully = True
-
-    def build(
-        self,
-        phi: FNode,
-        solver: str = "total",
-        computation_logger: Dict = None,
-        verbose: bool = False,
-    ) -> None:
-        """
-        builds an AbstractionBDD
-
-        Args:
-            phi (FNode): a pysmt formula
-            solver (str) ["partial"]: used for T-atoms normalization, can be set to total or partial
-            verbose (bool) [False]: set it to True to log computation on stdout
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
-        """
+        if folder_name is not None:
+            self._load_from_folder(folder_name)
+            return
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("Abstraction BDD") is None:
@@ -213,6 +195,17 @@ class AbstractionBDD:
         # SAVE BDD
         _cudd_dump(self.root, f"{folder_path}/abstraction_bdd_data")
 
+    def _load_from_folder(self, folder_name:str) -> None:
+        """Loads an Abstraction BDD from a folder
+
+        Args:
+            folder_name (str): the path to the folder where the BDD is stored
+        """
+        self.mapping = formula.load_abstraction_function(f"{folder_name}/abstraction.json")
+        self.bdd = cudd_bdd.BDD()
+        self.bdd.declare(*self.mapping.values())
+        self.root = _cudd_load(f"{folder_name}/abstraction_bdd_data", self.bdd)
+
 
 def abstraction_bdd_load_from_folder(folder_path: str) -> AbstractionBDD:
     """Loads an Abstraction BDD from a folder
@@ -223,12 +216,4 @@ def abstraction_bdd_load_from_folder(folder_path: str) -> AbstractionBDD:
     Returns:
         (AbstractionBDD) -> the Abstraction BDD loaded from the folder
     """
-    result = AbstractionBDD(None, build_immediately=False)
-    result.mapping = formula.load_abstraction_function(
-        f"{folder_path}/abstraction.json"
-    )
-    result.bdd = cudd_bdd.BDD()
-    result.bdd.declare(*result.mapping.values())
-    result.root = _cudd_load(f"{folder_path}/abstraction_bdd_data", result.bdd)
-    result.built_successfully = True
-    return result
+    return AbstractionBDD(None, folder_name=folder_path)
