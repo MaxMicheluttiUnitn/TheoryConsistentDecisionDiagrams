@@ -24,6 +24,7 @@ from pysmt.smtlib.script import smtlibscript_from_formula as _script_from_formul
 from pysmt.smtlib.parser.parser import get_formula as _get_formula
 from theorydd._string_generator import SequentialStringGenerator
 
+from theorydd.custom_exceptions import FormulaException
 from theorydd.normalizer import NormalizerWalker
 
 
@@ -58,9 +59,11 @@ def bottom() -> FNode:
     """return a FNode representing False"""
     return _FALSE()
 
+
 def top() -> FNode:
     """returns a FNode representing True"""
     return _TRUE()
+
 
 def read_phi(filename: str) -> FNode:
     """Reads the SMT formula from a file and returns the corresponding root FNode
@@ -69,13 +72,18 @@ def read_phi(filename: str) -> FNode:
         filename (str): the name of the file
 
     Returns:
-        FNode: the pysmt formula read from the file 
+        FNode: the pysmt formula read from the file
     """
     # pylint: disable=unused-argument
-    if not isinstance(filename,str):
-        raise TypeError("Expected str found "+str(type(filename)))
-    other_phi = _read_smtlib(filename)
-    return other_phi
+    if not isinstance(filename, str):
+        raise TypeError("Expected str found " + str(type(filename)))
+    try:
+        other_phi = _read_smtlib(filename)
+        return other_phi
+    except Exception as _e:
+        raise FormulaException(
+            "The input formula is not supported by the PYSMT package and cannot be read"
+        ) from _e
 
 
 def save_phi(phi: FNode, filename: str) -> None:
@@ -85,8 +93,8 @@ def save_phi(phi: FNode, filename: str) -> None:
         filename (str): the name of the file
     """
     # pylint: disable=unused-argument
-    if not isinstance(filename,str):
-        raise TypeError("Expected str found "+str(type(filename)))
+    if not isinstance(filename, str):
+        raise TypeError("Expected str found " + str(type(filename)))
     _write_smtlib(phi, filename)
 
 
@@ -99,43 +107,43 @@ def get_atoms(phi: FNode) -> List[FNode]:
     Returns:
         List[FNode]: the atoms in the formula
     """
-    if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+str(type(phi)))
+    if not isinstance(phi, FNode):
+        raise TypeError("Expected FNode found " + str(type(phi)))
     return list(phi.get_atoms())
 
 
 def get_symbols(phi: FNode) -> List[FNode]:
     """returns all symbols in phi
-    
+
     Args:
         phi (FNode): a pysmt formula
 
     Returns:
         List[FNode]: the symbols in the formula
     """
-    if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+str(type(phi)))
+    if not isinstance(phi, FNode):
+        raise TypeError("Expected FNode found " + str(type(phi)))
     return list(phi.get_free_variables())
 
 
 def get_normalized(phi: FNode, converter) -> FNode:
     """Returns a normalized version of phi
-    
+
     Args:
         phi (FNode): a pysmt formula
 
     Returns:
         FNode: the provided formula normalized according to the converter
     """
-    if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+str(type(phi)))
+    if not isinstance(phi, FNode):
+        raise TypeError("Expected FNode found " + str(type(phi)))
     walker = NormalizerWalker(converter)
     return walker.walk(phi)
 
 
 def get_phi_and_lemmas(phi: FNode, tlemmas: List[FNode]) -> FNode:
     """Returns a formula that is equivalent to phi and lemmas as an FNode
-    
+
     Args:
         phi (FNode): a pysmt formula
         tlemmas (List[FNode]): a list of pysmt formulas
@@ -143,26 +151,26 @@ def get_phi_and_lemmas(phi: FNode, tlemmas: List[FNode]) -> FNode:
     Returns:
         FNode: the big and of phi and the lemmas
     """
-    if not isinstance(phi,FNode):
-        raise TypeError("Expected FNode found "+str(type(phi)))
-    if not isinstance(tlemmas,list):
-        raise TypeError("Expected List found "+str(type(tlemmas)))
+    if not isinstance(phi, FNode):
+        raise TypeError("Expected FNode found " + str(type(phi)))
+    if not isinstance(tlemmas, list):
+        raise TypeError("Expected List found " + str(type(tlemmas)))
     if len(tlemmas) == 0:
         return phi
     for lemma in tlemmas:
-        if not isinstance(lemma,FNode):
-            raise TypeError("Expected FNode found "+str(type(lemma)))
+        if not isinstance(lemma, FNode):
+            raise TypeError("Expected FNode found " + str(type(lemma)))
     return _And(phi, *tlemmas)
 
 
 def get_boolean_mapping(phi: FNode) -> Dict[FNode, FNode]:
     """Generates a new fresh atom for each T-atom in phi and maps them
-    
+
     Args:
         phi (FNode): a pysmt formula
 
     Returns:
-        Dict[FNode,FNode]: a dictionary containing the mapping, 
+        Dict[FNode,FNode]: a dictionary containing the mapping,
             where the fresh boolean atoms are keys and the T-atoms are items
     """
     phi_atoms = get_atoms(phi)
@@ -176,12 +184,12 @@ def get_boolean_mapping(phi: FNode) -> Dict[FNode, FNode]:
 
 def atoms_difference(original: List[FNode], expanded: List[FNode]) -> List[FNode]:
     """Computes the diffrence between expanded and original
-    
+
     Args:
         original (List[FNode]): a list the atoms of the original pysmt formula,
             before adding the lemmas
-        tlemmas (List[FNode]): a list of the atoms the expanded formula, 
-            with the lemmas 
+        tlemmas (List[FNode]): a list of the atoms the expanded formula,
+            with the lemmas
 
     Returns:
         List[FNode]: the atoms that appear in expanded, but do not appear in original
@@ -195,7 +203,7 @@ def atoms_difference(original: List[FNode], expanded: List[FNode]) -> List[FNode
 
 def big_and(nodes: List[FNode]) -> FNode:
     """Returns the big and of all the arguments
-    
+
     Args:
         nodes (List[FNode]): a list of pysmt formulas
 
@@ -206,6 +214,7 @@ def big_and(nodes: List[FNode]) -> FNode:
     elif len(nodes) == 1:
         return nodes[0]
     return _And(*nodes)
+
 
 def save_refinement(mapping: Dict[object, FNode], mapping_file: str) -> None:
     """
@@ -229,8 +238,9 @@ def save_refinement(mapping: Dict[object, FNode], mapping_file: str) -> None:
         mapping_items.append((k, serialized_item))
 
     # write mapping_items in mapping file
-    with open(mapping_file, "w", encoding='utf8') as out:
+    with open(mapping_file, "w", encoding="utf8") as out:
         json.dump(mapping_items, out)
+
 
 def save_abstraction_function(mapping: Dict[FNode, object], mapping_file: str) -> None:
     """
@@ -242,7 +252,7 @@ def save_abstraction_function(mapping: Dict[FNode, object], mapping_file: str) -
         mapping_file (str) -> the path to the file where the mapping file will be saved
     """
     # collect serialized mapping items
-    mapping_items: List[Tuple[str,object]] = []
+    mapping_items: List[Tuple[str, object]] = []
     for k, v in mapping.items():
         # serialize formula into SMTlib script and read it on a string stream
         script = _script_from_formula(k)
@@ -250,10 +260,10 @@ def save_abstraction_function(mapping: Dict[FNode, object], mapping_file: str) -
         script.serialize(output_stream)
         serialized_item = output_stream.getvalue()
         # add serialized item to list
-        mapping_items.append((serialized_item,v))
+        mapping_items.append((serialized_item, v))
 
     # write mapping_items in mapping file
-    with open(mapping_file, "w", encoding='utf8') as out:
+    with open(mapping_file, "w", encoding="utf8") as out:
         json.dump(mapping_items, out)
 
 
@@ -273,9 +283,9 @@ def load_refinement(mapping_path: str) -> Dict[object, FNode]:
             f"The path {mapping_path} does not exist. Please create it before loading the mapping."
         )
 
-    mapping: Dict[object,FNode] = {}
-    with open(mapping_path,"r",encoding='utf8') as input_data:
-        mapping_items: List[Tuple[int,str]] = json.load(input_data)
+    mapping: Dict[object, FNode] = {}
+    with open(mapping_path, "r", encoding="utf8") as input_data:
+        mapping_items: List[Tuple[int, str]] = json.load(input_data)
         for item in mapping_items:
             key = item[0]
             serialized_formula = item[1]
@@ -283,6 +293,7 @@ def load_refinement(mapping_path: str) -> Dict[object, FNode]:
             input_stream = StringIO(serialized_formula)
             mapping[key] = _get_formula(input_stream)
     return mapping
+
 
 def load_abstraction_function(mapping_path: str) -> Dict[FNode, object]:
     """
@@ -300,9 +311,9 @@ def load_abstraction_function(mapping_path: str) -> Dict[FNode, object]:
             f"The path {mapping_path} does not exist. Please create it before loading the mapping."
         )
 
-    mapping: Dict[FNode,object] = {}
-    with open(mapping_path,"r",encoding='utf8') as input_data:
-        mapping_items: List[Tuple[int,str]] = json.load(input_data)
+    mapping: Dict[FNode, object] = {}
+    with open(mapping_path, "r", encoding="utf8") as input_data:
+        mapping_items: List[Tuple[int, str]] = json.load(input_data)
         for item in mapping_items:
             key = item[1]
             serialized_formula = item[0]
@@ -310,4 +321,3 @@ def load_abstraction_function(mapping_path: str) -> Dict[FNode, object]:
             input_stream = StringIO(serialized_formula)
             mapping[_get_formula(input_stream)] = key
     return mapping
-            

@@ -6,6 +6,12 @@ class NotReadyException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
+class FormulaException(Exception):
+    '''An exception for errors regarding the formula management'''
+
+    def __init__(self, message):
+        super().__init__(message)
+
 class UnsupportedNodeException(Exception):
     '''An exception for unsupported nodes'''
 
