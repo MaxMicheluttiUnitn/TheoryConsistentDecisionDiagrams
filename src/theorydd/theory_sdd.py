@@ -1,6 +1,8 @@
 """theory SDD module"""
 
 from array import array
+import json
+import os
 import time
 from typing import Dict, List, Set
 from pysmt.fnode import FNode
@@ -17,8 +19,16 @@ from theorydd._string_generator import (
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
+<<<<<<< HEAD
 from theorydd.constants import VALID_VTREE, VALID_SOLVER, UNSAT, SAT
 from theorydd.custom_exceptions import InvalidVTreeException, InvalidSolverException
+=======
+from theorydd.constants import VALID_VTREE, VALID_SOLVER
+from theorydd.custom_exceptions import (
+    InvalidVTreeException,
+    InvalidSolverException,
+)
+>>>>>>> main
 
 
 class TheorySDD:
@@ -45,6 +55,7 @@ class TheorySDD:
         sat_result: bool | None = None,
         tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
+        folder_name: str | None = None,
     ) -> None:
         """Builds a T-SDD. The construction requires the
         computation of All-SMT for the provided formula to
@@ -55,6 +66,7 @@ class TheorySDD:
             phi (FNode) : a pysmt formula
             solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
                 Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
+                Valid solvers are "total", "partial" and "full_partial", or you can pass an instance of a SMTSolver or PartialSMTSolver
             load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
@@ -64,7 +76,12 @@ class TheorySDD:
             sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+            folder_name (str | None) [None]: the path to a folder where data to load the T-SDD is stored.
+                If this is not None, then all other parameters are ignored
         """
+        if folder_name is not None:
+            self._load_from_folder(folder_name)
+            return
         if vtree_type not in VALID_VTREE:
             raise InvalidVTreeException(
                 'Invalid V-Tree type "'
@@ -328,3 +345,75 @@ class TheorySDD:
         if self.root.is_false():
             return []
         return []
+
+    def save_to_folder(self, folder_path: str) -> None:
+        """Save the T-SDD in the specified solver
+
+        Args:
+            folder_path (str): the path to the output folder
+        """
+        # check if folder exists
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        # save vtree
+        self.save_vtree_to_folder(folder_path)
+        # save mapping
+        formula.save_abstraction_function(
+            self.mapping, folder_path + "/abstraction.json"
+        )
+        # SAVE QVARS
+        qvars_indexes = [self.mapping[qvar] for qvar in self.qvars]
+        with open(f"{folder_path}/qvars.qvars", "w", encoding="utf8") as out:
+            json.dump(qvars_indexes, out)
+        # save sdd
+        self.root.save(str.encode(folder_path + "/sdd.sdd"))
+
+    def save_vtree_to_folder(self, folder_path: str) -> None:
+        """Save the V-Tree in the specified folder
+
+        Args:
+            folder_path (str): the path to the output folder
+        """
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        self.vtree.save(str.encode(folder_path + "/vtree.vtree"))
+
+    def _load_from_folder(self, folder_path: str) -> None:
+        """
+        Load an AbstractionSDD from a folder
+
+        Args:
+            folder_path (str): the path to the folder where the data is stored
+        """
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError("The folder does not exist")
+        self.vtree = vtree_load_from_folder(folder_path)
+        self.mapping = formula.load_abstraction_function(
+            folder_path + "/abstraction.json"
+        )
+        self.name_to_atom_map = {v: k for k, v in self.mapping.items()}
+        self.manager = SddManager.from_vtree(self.vtree)
+        self.root = self.manager.read_sdd_file(str.encode(f"{folder_path}/sdd.sdd"))
+        with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
+            qvars_indexes = json.load(input_data)
+            self.qvars = [self.name_to_atom_map[qvar_id] for qvar_id in qvars_indexes]
+
+
+def vtree_load_from_folder(folder_path: str) -> Vtree:
+    """Load a V-Tree from the specified folder
+
+    Args:
+        folder_path (str): the path to the folder containing the V-Tree
+    """
+    if not os.path.exists(folder_path):
+        raise FileNotFoundError("The folder does not exist")
+    return Vtree(filename=folder_path + "/vtree.vtree")
+
+
+def tsdd_load_from_folder(folder_path: str) -> TheorySDD:
+    """Load a T-SDD from the specified folder
+
+    Args:
+        folder_path (str): the path to the folder containing the T-SDD
+    """
+    return TheorySDD(None, folder_name=folder_path)

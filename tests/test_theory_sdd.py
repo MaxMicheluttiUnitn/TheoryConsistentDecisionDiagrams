@@ -99,10 +99,11 @@ def test_init_tautology():
 
 def test_one_variable():
     """tests SDD generation"""
-    phi = LT(Symbol("a", REAL), Symbol("b", REAL))
+    phi = LT(Symbol("test_sdd_a", REAL), Symbol("test_sdd_b", REAL))
     tsdd = TheorySDD(phi, "partial")
     assert tsdd.count_nodes() <= 1, "TSDD is only True node"
     assert tsdd.count_models() == 1, "TSDD should have 1 model (atom True)"
+
 def _create_disjunct(model):
     literals = []
     for atom, truth in model.items():

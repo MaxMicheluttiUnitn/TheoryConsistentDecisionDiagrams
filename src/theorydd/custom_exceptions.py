@@ -1,5 +1,16 @@
 '''this module defines custom exceptions for this package'''
 
+class NotReadyException(Exception):
+    '''An exception for objects that have not been built but try to be used'''
+
+    def __init__(self, message):
+        super().__init__(message)
+
+class FormulaException(Exception):
+    '''An exception for errors regarding the formula management'''
+
+    def __init__(self, message):
+        super().__init__(message)
 
 class UnsupportedNodeException(Exception):
     '''An exception for unsupported nodes'''
