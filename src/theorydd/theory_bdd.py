@@ -216,6 +216,7 @@ class TheoryBDD:
             if verbose:
                 print("Building T-BDD for UNSAT formula...")
             self.root = walker.walk(formula.bottom())
+            elapsed_time = time.time() - start_time
             if verbose:
                 print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
             computation_logger["T-BDD"]["UNSAT DD building time"] = elapsed_time
