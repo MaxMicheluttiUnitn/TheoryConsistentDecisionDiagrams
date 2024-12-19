@@ -26,6 +26,7 @@ from theorydd._string_generator import SequentialStringGenerator
 
 from theorydd.custom_exceptions import FormulaException
 from theorydd.normalizer import NormalizerWalker
+from theorydd.duoble_negation_walker import DoubleNegWalker
 
 
 def default_phi() -> FNode:
@@ -207,7 +208,7 @@ def big_and(nodes: List[FNode]) -> FNode:
         nodes (List[FNode]): a list of pysmt formulas
 
     Returns:
-        FNode: the big and of all the nodes. 
+        FNode: the big and of all the nodes.
         If no atom is provided, this function returns the FNode for TRUE"""
     if len(nodes) == 0:
         return _TRUE()
@@ -321,3 +322,16 @@ def load_abstraction_function(mapping_path: str) -> Dict[FNode, object]:
             input_stream = StringIO(serialized_formula)
             mapping[_get_formula(input_stream)] = key
     return mapping
+
+
+def without_double_neg(phi: FNode) -> FNode:
+    """removes all double negations from phi
+
+    Args:
+        phi (FNode): a pysmt formula
+
+    Returns:
+        FNode: the formula without double negations
+    """
+    walker = DoubleNegWalker()
+    return walker.walk(phi)
