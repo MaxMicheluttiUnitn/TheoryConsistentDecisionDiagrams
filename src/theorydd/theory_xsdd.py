@@ -22,7 +22,8 @@ class TheoryXSDD:
 
     def __init__(self, phi: FNode, computation_logger: Dict = None):
         """
-        Builds an XSDD for phi
+        Builds an XSDD for phi. This module was only used in early development and its use
+        is not recommended. It is not maintained and may be removed in future versions
         
         Args:
             phi (FNode): a pysmt formula
