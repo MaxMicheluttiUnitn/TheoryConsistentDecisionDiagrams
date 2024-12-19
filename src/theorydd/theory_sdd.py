@@ -19,16 +19,11 @@ from theorydd._string_generator import (
 from theorydd.formula import get_atoms
 from theorydd.walker_sdd import SDDWalker
 from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
-<<<<<<< HEAD
-from theorydd.constants import VALID_VTREE, VALID_SOLVER, UNSAT, SAT
-from theorydd.custom_exceptions import InvalidVTreeException, InvalidSolverException
-=======
-from theorydd.constants import VALID_VTREE, VALID_SOLVER
+from theorydd.constants import VALID_VTREE, VALID_SOLVER, SAT
 from theorydd.custom_exceptions import (
     InvalidVTreeException,
     InvalidSolverException,
 )
->>>>>>> main
 
 
 class TheorySDD:
@@ -65,7 +60,6 @@ class TheorySDD:
         Args:
             phi (FNode) : a pysmt formula
             solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
-                Valid solvers are "partial" and "total", or you can pass an instance of a SMTSolver or PartialSMTSolver
                 Valid solvers are "total", "partial" and "full_partial", or you can pass an instance of a SMTSolver or PartialSMTSolver
             load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
@@ -337,14 +331,10 @@ class TheorySDD:
     def pick(self) -> Dict[FNode, bool]:
         """Returns a model of the encoded formula"""
         raise NotImplementedError()
-        return {}
 
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """returns a list of all the models in the encoded formula"""
         raise NotImplementedError()
-        if self.root.is_false():
-            return []
-        return []
 
     def save_to_folder(self, folder_path: str) -> None:
         """Save the T-SDD in the specified solver
