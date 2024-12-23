@@ -8,10 +8,9 @@ from typing import Dict, List, Set
 from pysmt.fnode import FNode
 from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
-from theorydd.solvers.lemma_extractor import extract, find_qvars
+from theorydd.solvers.lemma_extractor import find_qvars
 from theorydd.solvers.solver import SMTEnumerator
 from theorydd.tdd.theory_dd import TheoryDD
-from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.util._utils import get_solver as _get_solver
 from theorydd.walkers.walker_sdd import SDDWalker
@@ -67,6 +66,7 @@ class TheorySDD(TheoryDD):
             folder_name (str | None) [None]: the path to a folder where data to load the T-SDD is stored.
                 If this is not None, then all other parameters are ignored
         """
+        super().__init__()
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return
@@ -86,12 +86,22 @@ class TheorySDD(TheoryDD):
             smt_solver = _get_solver(solver)
         else:
             smt_solver = solver
-        
+
         # normalize phi
-        phi = self._normalize_input(phi, smt_solver, verbose, computation_logger["T-SDD"])
+        phi = self._normalize_input(
+            phi, smt_solver, verbose, computation_logger["T-SDD"]
+        )
 
         # EXTRACTING T-LEMMAS
-        tlemmas, sat_result = self._load_lemmas(phi, smt_solver, tlemmas, load_lemmas, sat_result, verbose, computation_logger["T-SDD"])
+        tlemmas, sat_result = self._load_lemmas(
+            phi,
+            smt_solver,
+            tlemmas,
+            load_lemmas,
+            sat_result,
+            verbose,
+            computation_logger["T-SDD"],
+        )
 
         # COMPUTE PHI AND LEMMAS
         phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
@@ -107,7 +117,9 @@ class TheorySDD(TheoryDD):
         atoms = get_atoms(phi_and_lemmas)
 
         # CREATING VARIABLE MAPPING
-        self.mapping = self._compute_mapping(atoms, verbose, computation_logger["T-SDD"])
+        self.mapping = self._compute_mapping(
+            atoms, verbose, computation_logger["T-SDD"]
+        )
 
         # BUILDING V-TREE
         self._build_vtree(atoms, vtree_type, verbose, computation_logger["T-SDD"])
@@ -126,7 +138,9 @@ class TheorySDD(TheoryDD):
         computation_logger["T-SDD"]["DD preparation time"] = elapsed_time
 
         if sat_result is None or sat_result == SAT:
-            self.root = self._build(phi, tlemmas, walker, verbose, computation_logger["T-SDD"])
+            self.root = self._build(
+                phi, tlemmas, walker, verbose, computation_logger["T-SDD"]
+            )
         else:
             self.root = self._build_unsat(walker, verbose, computation_logger["T-SDD"])
 
@@ -138,11 +152,11 @@ class TheorySDD(TheoryDD):
                 existential_map.append(1)
             else:
                 existential_map.append(0)
-        return self.manager.exists_multiple(
-            array("i", existential_map), tlemmas_dd
-        )
+        return self.manager.exists_multiple(array("i", existential_map), tlemmas_dd)
 
-    def _build_vtree(self, atoms: List[FNode], vtree_type, verbose: bool, computation_logger: Dict) -> None:
+    def _build_vtree(
+        self, atoms: List[FNode], vtree_type, verbose: bool, computation_logger: Dict
+    ) -> None:
         start_time = time.time()
         if verbose:
             print("Building V-Tree...")

@@ -54,6 +54,7 @@ class AbstractionSDD(AbstractDD):
             folder_name (str | None) [None]: the path to a folder where data to load the AbstractionSDD is stored.
                 If this is not None, then all other parameters are ignored
         """
+        super().__init__()
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return

@@ -15,10 +15,9 @@ from theorydd.util._utils import (
     get_solver as _get_solver,
 )
 from theorydd.solvers.solver import SMTEnumerator
-from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walkers.walker_bdd import BDDWalker
-from theorydd.solvers.lemma_extractor import extract, find_qvars
+from theorydd.solvers.lemma_extractor import find_qvars
 from theorydd.constants import SAT
 from theorydd.tdd.theory_dd import TheoryDD
 
@@ -65,6 +64,7 @@ class TheoryBDD(TheoryDD):
             folder_name (str | None) [None]: the path to a folder where data to load the T-BDD is stored.
                 If this is not None, then all other parameters are ignored
         """
+        super().__init__()
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return
