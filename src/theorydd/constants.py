@@ -6,14 +6,14 @@ VALID_VTREE = ["left", "right", "balanced", "vertical", "random"]
 
 VALID_LDD_THEORY = ["TVPI", "TVPIZ", "UTVPIZ", "BOX", "BOXZ"]
 
-VALID_SOLVER = ["partial", "total","full_partial"]
+VALID_SOLVER = ["partial", "total","extended_partial"]
 
 # SAT / UNSAT
 
 SAT = True
 UNSAT = False
 
-# DD DUMPING
+# DD GRAPHICAL DUMPING
 
 BDD_DOT_LINE_REGEX = r'[\[]label="[a-z]*-[0-9]*"[]]'
 BDD_DOT_TRUE_LABEL = '[label="True-1"]'
