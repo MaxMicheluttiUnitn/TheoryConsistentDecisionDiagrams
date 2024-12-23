@@ -1,24 +1,20 @@
-"""this module defines a Walker that takes a pysmt formula and converts it into a BDD formula"""
+"""this module defines a Walker that takes a pysmt formula and converts it into a SDD formula"""
 
 from collections import deque
-from typing import List
-from dd.autoref import BDD
+from pysdd.sdd import SddManager
 from pysmt.fnode import FNode
 from pysmt.walkers import DagWalker, handles
 import pysmt.operators as op
+from theorydd.util.custom_exceptions import UnsupportedNodeException
 
-from theorydd.custom_exceptions import UnsupportedNodeException
 
-
-class BDDWalker(DagWalker):
-    """A walker to translate the DAG formula quickly with memoization into the BDD"""
-
-    # Fix me: references at __del__!!!
+class SDDWalker(DagWalker):
+    """A walker to translate the DAG formula quickly with memoization into the SDD"""
 
     def __init__(
         self,
-        mapping: dict[FNode, str],
-        manager: BDD,
+        mapping: dict[FNode, int],
+        manager: SddManager,
         env=None,
         invalidate_memoization=False,
     ):
@@ -27,10 +23,10 @@ class BDDWalker(DagWalker):
         self.manager = manager
         return
 
-    def _apply_mapping(self, arg: FNode):
-        """applies the mapping when possible, returns None othrwise"""
-        if not self.mapping.get(arg) is None:
-            return self.manager.add_expr(self.mapping[arg])
+    def _apply_mapping(self, arg):
+        """applies the mapping when possible, returns None otherwise"""
+        if self.mapping.get(arg) is not None:
+            return self.mapping[arg]
         return None
 
     def walk_and(self, formula: FNode, args, **kwargs):
@@ -74,8 +70,13 @@ class BDDWalker(DagWalker):
         # pylint: disable=unused-argument
         value = formula.constant_value()
         if value:
-            return self.manager.true
-        return self.manager.false
+            return self.manager.true()
+        return self.manager.false()
+
+    def walk_real_constant(self, formula: FNode, args, **kwargs):
+        """translate REAl const node"""
+        # pylint: disable=unused-argument
+        return formula.constant_value()
 
     def walk_iff(self, formula, args, **kwargs):
         """translate IFF node"""
@@ -125,5 +126,6 @@ class BDDWalker(DagWalker):
     def do_nothing(self, formula, args, **kwargs):
         """do nothing when seeing theory constants"""
         # pylint: disable=unused-argument
+        # they are not a valid T-atom by themselves, no need to perform any computation
         return
         # raise UnsupportedNodeException("Pure Theory Constant Found: "+str(formula))

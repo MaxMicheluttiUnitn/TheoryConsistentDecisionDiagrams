@@ -3,7 +3,7 @@
 import re
 import pydot
 from pysmt.formula import FNode
-from theorydd._utils import get_string_from_atom as _get_string_from_atom
+from theorydd.util._utils import get_string_from_atom as _get_string_from_atom
 from theorydd.constants import *
 
 

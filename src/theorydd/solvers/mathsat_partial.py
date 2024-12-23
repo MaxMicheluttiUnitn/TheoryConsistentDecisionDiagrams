@@ -1,34 +1,39 @@
 """this module handles interactions with the mathsat solver"""
 
 from typing import List, Dict
-from pysmt.shortcuts import Solver, Iff, BOOL
+from pysmt.shortcuts import Solver
 from pysmt.fnode import FNode
 import mathsat
-
+from allsat_cnf.polarity_cnfizer import PolarityCNFizer
 from theorydd.constants import SAT, UNSAT
-from theorydd.formula import get_symbols
+from theorydd.solvers.solver import SMTEnumerator
 
 
 def _allsat_callback(model, converter, models):
+    """callback for all-sat"""
     py_model = {converter.back(v) for v in model}
     models.append(py_model)
     return 1
 
 
-class SMTSolver:
-    """A wrapper for the mathsat T-solver"""
+class MathSATPartialEnumerator(SMTEnumerator):
+    """A wrapper for the mathsat T-solver
+
+    Computes all-SMT by only computing partial assignments without extending them.
+    This always guarantees at least one T-SAT extension of each partial assignment,
+    but some T-inconsistent extension may not be ruled out by the computed T-lemmas."""
 
     def __init__(self) -> None:
         solver_options_dict = {
-            "dpll.allsat_minimize_model": "false",  # - total truth assignments
+            "dpll.allsat_minimize_model": "true",  # - partial truth assignments
             # "theory.pure_literal_filtering": "true",
             # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
             "preprocessor.toplevel_propagation": "false",
             "preprocessor.simplification": "0",  # from mathsat
-            "dpll.store_tlemmas": "true",  # - necessary to get t-lemmas
-            "theory.la.split_rat_eq":"false", 
+            "dpll.store_tlemmas": "true",  # - necessary to obtain t-lemmas
+            "theory.la.split_rat_eq": "false",
         }
         self.solver = Solver("msat", solver_options=solver_options_dict)
         self._last_phi = None
@@ -40,55 +45,46 @@ class SMTSolver:
     def check_all_sat(
         self, phi: FNode, boolean_mapping: Dict[FNode, FNode] = None
     ) -> bool:
-        """Computes All-SMT for the SMT-formula phi using total assignments
-        
+        """Computes All-SMT for the SMT-formula phi generating partial assignments and using Tsetsin CNF-ization
+
         Args:
             phi (FNode): a pysmt formula
-            boolean_mapping (Dict[FNode, FNode]) [None]: a mapping to associate to
-                each T-atom (values) a fresh boolean variable (keys). If set, the enumeration 
-                happens only on these fresh boolean variables and the original boolean variables 
-                of the formula
+            boolean_mapping (Dict[FNode, FNode]) [None]: unused, for compatibility with SMTSolver
         """
+        if boolean_mapping is not None:
+            boolean_mapping = None
+
         self._last_phi = phi
         self._tlemmas = []
         self._models = []
         self._atoms = []
 
         self._atoms = phi.get_atoms()
-        self.solver.reset_assertions()
-        self.solver.add_assertion(phi)
 
-        if boolean_mapping is not None:
-            for k, v in boolean_mapping.items():
-                self.solver.add_assertion(Iff(k, v))
+        self.solver.reset_assertions()
+        phi_tsetsin = PolarityCNFizer(
+            nnf=True, mutex_nnf_labels=True
+        ).convert_as_formula(phi)
+        self.solver.add_assertion(phi_tsetsin)
 
         self._models = []
-        if boolean_mapping is not None:
-            phi_symbols: List[FNode] = get_symbols(phi)
-            phi_symbols = list(filter(lambda x: x.get_type() == BOOL,phi_symbols))
-            mathsat.msat_all_sat(
-                self.solver.msat_env(),
-                # self.get_converted_atoms(atoms),
-                self.get_converted_atoms(list(boolean_mapping.keys())+phi_symbols),
-                callback=lambda model: _allsat_callback(
-                    model, self._converter, self._models
-                ),
-            )
-        else:
-            mathsat.msat_all_sat(
-                self.solver.msat_env(),
-                self.get_converted_atoms(self._atoms),
-                # self.get_converted_atoms(
-                #    list(boolean_mapping.keys())),
-                callback=lambda model: _allsat_callback(
-                    model, self._converter, self._models
-                ),
-            )
+        mathsat.msat_all_sat(
+            self.solver.msat_env(),
+            self.get_converted_atoms(self._atoms),
+            # self.get_converted_atoms(
+            #    list(boolean_mapping.keys())),
+            callback=lambda model: _allsat_callback(
+                model, self._converter, self._models
+            ),
+        )
 
         self._tlemmas = [
             self._converter.back(l)
             for l in mathsat.msat_get_theory_lemmas(self.solver.msat_env())
         ]
+
+        # phi_plus_lemmas = And(phi, *self._tlemmas)
+        # self.solver_total.add_assertion(phi_plus_lemmas)
 
         if len(self._models) == 0:
             return UNSAT

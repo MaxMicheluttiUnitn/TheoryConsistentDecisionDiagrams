@@ -2,7 +2,7 @@
 
 import random
 import string
-import theorydd._utils as utils
+import theorydd.util._utils as utils
 
 
 def test_is_valid_solver():

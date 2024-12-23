@@ -7,16 +7,14 @@ from pysmt.fnode import FNode
 import pydot
 from dd import cudd as cudd_bdd
 from theorydd import formula
-from theorydd.smt_solver import SMTSolver
-from theorydd.smt_solver_partial import PartialSMTSolver
-from theorydd._string_generator import SequentialStringGenerator
-from theorydd.formula import get_atoms
-from theorydd.walker_bdd import BDDWalker
-from theorydd._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
-from theorydd._utils import cudd_dump as _cudd_dump, cudd_load as _cudd_load
+from theorydd.abstractdd.abstractdd import AbstractDD
+from theorydd.solvers.solver import SMTEnumerator
+from theorydd.walkers.walker_bdd import BDDWalker
+from theorydd.util._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
+from theorydd.util._utils import cudd_dump as _cudd_dump, cudd_load as _cudd_load, get_solver as _get_solver
 
 
-class AbstractionBDD:
+class AbstractionBDD(AbstractDD):
     """Python class to generate and handle abstraction BDDs.
 
     Abstraction BDDs are BDDs of the boolean abstraction of a normalized
@@ -33,7 +31,7 @@ class AbstractionBDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str = "total",
+        solver: str | SMTEnumerator = "total",
         computation_logger: Dict = None,
         verbose: bool = False,
         folder_name: str | None = None,
@@ -43,12 +41,14 @@ class AbstractionBDD:
 
         Args:
             phi (FNode): a pysmt formula
-            solver (str) ["partial"]: used for T-atoms normalization, can be set to total or partial
+            solver (str | SMTEnumerator) ["total"]: used for T-atoms normalization, can be set to total, 
+                partial or extended_partial or a SMTEnumerator can be provided
             verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
             folder_name (str | None) [None]: the path to a folder where data to load the AbstractionBDD is stored.
                 If this is not None, then all other parameters are ignored
         """
+        super().__init__()
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return
@@ -59,10 +59,10 @@ class AbstractionBDD:
         start_time = time.time()
         if verbose:
             print("Normalizing phi according to solver...")
-        if solver == "total":
-            smt_solver = SMTSolver()
+        if isinstance(solver, str):
+            smt_solver = _get_solver(solver)
         else:
-            smt_solver = PartialSMTSolver()
+            smt_solver = solver
         phi = formula.get_normalized(phi, smt_solver.get_converter())
         elapsed_time = time.time() - start_time
         if verbose:
@@ -70,31 +70,18 @@ class AbstractionBDD:
         computation_logger["Abstraction BDD"]["phi normalization time"] = elapsed_time
 
         # CREATING VARIABLE MAPPING
-        start_time = time.time()
-        if verbose:
-            print("Creating mapping...")
-        self.mapping = {}
-        atoms = get_atoms(phi)
-        string_generator = SequentialStringGenerator()
-        for atom in atoms:
-            self.mapping[atom] = string_generator.next_string()
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("Mapping created in ", elapsed_time, " seconds")
-        computation_logger["Abstraction BDD"][
-            "variable mapping creation time"
-        ] = elapsed_time
+        self.mapping = self._compute_mapping(phi, verbose, computation_logger["Abstraction BDD"])
 
         # BUILDING ACTUAL BDD
+        self._build(phi, verbose, computation_logger["Abstraction BDD"])
+
+    def _build(self, phi:FNode, verbose: bool, computation_logger: Dict):
+        """builds the DD"""
         start_time = time.time()
         if verbose:
             print("Building Abstraction BDD...")
         self.bdd = cudd_bdd.BDD()
-        appended_values = set()
-        all_values = []
-        for value in self.mapping.values():
-            if not value in appended_values:
-                all_values.append(value)
+        all_values = list(self.mapping.values())
         self.bdd.declare(*all_values)
         bdd_ordering = {}
         for i, item in enumerate(all_values):
@@ -105,7 +92,7 @@ class AbstractionBDD:
         elapsed_time = time.time() - start_time
         if verbose:
             print("Abstraction BDD for phi built in ", elapsed_time, " seconds")
-        computation_logger["Abstraction BDD"]["DD building time"] = elapsed_time
+        computation_logger["DD building time"] = elapsed_time
 
     def __len__(self) -> int:
         return len(self.root)
@@ -122,7 +109,7 @@ class AbstractionBDD:
         """Returns the amount of models in the Abstraction-BDD"""
         return self.root.count(nvars=len(self.mapping.keys()))
 
-    def dump(
+    def graphic_dump(
         self,
         output_file: str,
         print_mapping: bool = False,
@@ -195,16 +182,16 @@ class AbstractionBDD:
         # SAVE BDD
         _cudd_dump(self.root, f"{folder_path}/abstraction_bdd_data")
 
-    def _load_from_folder(self, folder_name:str) -> None:
+    def _load_from_folder(self, folder_path:str) -> None:
         """Loads an Abstraction BDD from a folder
 
         Args:
             folder_name (str): the path to the folder where the BDD is stored
         """
-        self.mapping = formula.load_abstraction_function(f"{folder_name}/abstraction.json")
+        self.mapping = formula.load_abstraction_function(f"{folder_path}/abstraction.json")
         self.bdd = cudd_bdd.BDD()
         self.bdd.declare(*self.mapping.values())
-        self.root = _cudd_load(f"{folder_name}/abstraction_bdd_data", self.bdd)
+        self.root = _cudd_load(f"{folder_path}/abstraction_bdd_data", self.bdd)
 
 
 def abstraction_bdd_load_from_folder(folder_path: str) -> AbstractionBDD:

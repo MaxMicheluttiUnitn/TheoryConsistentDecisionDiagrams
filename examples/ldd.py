@@ -1,4 +1,4 @@
-from theorydd.theory_ldd import TheoryLDD
+from theorydd.abstractdd.ldd import TheoryLDD
 from pysmt.shortcuts import And, Implies, Or, Iff, LT, Int, Symbol, INT, Plus
 
 

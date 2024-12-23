@@ -16,7 +16,7 @@ from pysmt.shortcuts import (
 )
 from pysmt.fnode import FNode
 import theorydd.formula as formula
-from theorydd.smt_solver import SMTSolver
+from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
 
 
 def test_bottom():
@@ -157,7 +157,7 @@ def test_get_atomss():
 
 def test_normalization():
     """tests for get_normalized"""
-    solver = SMTSolver()
+    solver = MathSATTotalEnumerator()
     converter = solver.get_converter()
     # all atoms are different
     phi = And(

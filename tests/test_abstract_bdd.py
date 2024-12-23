@@ -1,9 +1,8 @@
 """tests for Abstraction BDDs"""
 
 from copy import deepcopy
-from theorydd.abstraction_bdd import AbstractionBDD
-import theorydd.formula as formula
-from theorydd.smt_solver_partial import PartialSMTSolver
+from theorydd.abstractdd.abstraction_bdd import AbstractionBDD
+from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
 from pysmt.shortcuts import Or, LT, REAL, Symbol, And, Not
 
 
@@ -14,7 +13,7 @@ def test_init_default():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATTotalEnumerator()
     partial.check_all_sat(phi, None)
     models = partial.get_models()
     abdd = AbstractionBDD(phi, "partial")
@@ -31,7 +30,7 @@ def test_init_updated_computation_logger():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATTotalEnumerator()
     partial.check_all_sat(phi, None)
     models = partial.get_models()
     logger = {}
@@ -55,7 +54,7 @@ def test_init_t_unsat_formula():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATTotalEnumerator()
     partial.check_all_sat(phi, None)
     abdd = AbstractionBDD(phi, "partial")
     assert abdd.count_nodes() > 1, "abstr. BDD is not only False node"
@@ -68,7 +67,7 @@ def test_init_bool_unsat_formula():
         LT(Symbol("X", REAL), Symbol("Y", REAL)),
         Not(LT(Symbol("X", REAL), Symbol("Y", REAL))),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATTotalEnumerator()
     partial.check_all_sat(phi, None)
     abdd = AbstractionBDD(phi, "partial")
     assert abdd.count_nodes() == 1, "abstr. BDD is only False node"
@@ -81,7 +80,7 @@ def test_init_tautology():
         LT(Symbol("X", REAL), Symbol("Y", REAL)),
         Not(LT(Symbol("X", REAL), Symbol("Y", REAL))),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATTotalEnumerator()
     partial.check_all_sat(phi, None)
     abdd = AbstractionBDD(phi, "partial")
     assert abdd.count_nodes() == 1, "TBDD is only True node"

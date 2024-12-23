@@ -2,27 +2,20 @@
 
 from pysmt.shortcuts import (
     Or,
-    FALSE,
-    TRUE,
     Symbol,
-    BOOL,
     And,
     REAL,
     LE,
     LT,
-    Real,
-    Plus,
-    Times,
-    Not,
 )
-from theorydd.smt_solver import SMTSolver
-from theorydd.smt_solver_partial import PartialSMTSolver
+from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
+from theorydd.solvers.mathsat_partial_extended import MathSATExtendedPartialEnumerator
 import theorydd.formula as formula
 
 
 def test_all_smt_total():
     """tests for all-SMT functionality of solvers"""
-    solver = SMTSolver()
+    solver = MathSATTotalEnumerator()
     phi_sat = And(
         LE(Symbol("X", REAL), Symbol("Y", REAL)),
         LE(Symbol("Y", REAL), Symbol("X", REAL)),
@@ -41,7 +34,7 @@ def test_all_smt_total():
 
 def test_all_smt_total_bool_mapping():
     """tests for all-SMT functionality of total solver using boolean mapping"""
-    solver = SMTSolver()
+    solver = MathSATTotalEnumerator()
     phi_sat = And(
         LE(Symbol("X", REAL), Symbol("Y", REAL)),
         LE(Symbol("Y", REAL), Symbol("X", REAL)),
@@ -61,7 +54,7 @@ def test_all_smt_total_bool_mapping():
 
 def test_all_smt_partial():
     """tests for all-SMT functionality of solvers"""
-    partial_solver = PartialSMTSolver()
+    partial_solver = MathSATExtendedPartialEnumerator()
     phi_sat = And(
         LE(Symbol("X", REAL), Symbol("Y", REAL)),
         LE(Symbol("Y", REAL), Symbol("X", REAL)),
@@ -81,7 +74,7 @@ def test_all_smt_partial():
 
 def test_t_lemmas_partial():
     """tests for solvers.get_theory_lemmas()"""
-    partial_solver = PartialSMTSolver()
+    partial_solver = MathSATExtendedPartialEnumerator()
     phi_sat = And(
         LE(Symbol("X", REAL), Symbol("Y", REAL)),
         LE(Symbol("Zr", REAL), Symbol("W", REAL)),
@@ -104,7 +97,7 @@ def test_t_lemmas_partial():
 
 def test_t_lemmas_total():
     """tests for solvers.get_theory_lemmas()"""
-    solver = SMTSolver()
+    solver = MathSATTotalEnumerator()
     phi_sat = And(
         LE(Symbol("X", REAL), Symbol("Y", REAL)),
         LE(Symbol("Zr", REAL), Symbol("W", REAL)),

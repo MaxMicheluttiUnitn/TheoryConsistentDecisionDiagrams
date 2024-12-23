@@ -22,11 +22,11 @@ from pysmt.shortcuts import (
 from pysmt.fnode import FNode
 from pysmt.smtlib.script import smtlibscript_from_formula as _script_from_formula
 from pysmt.smtlib.parser.parser import get_formula as _get_formula
-from theorydd._string_generator import SequentialStringGenerator
+from theorydd.util._string_generator import SequentialStringGenerator
 
-from theorydd.custom_exceptions import FormulaException
-from theorydd.normalizer import NormalizerWalker
-from theorydd.duoble_negation_walker import DoubleNegWalker
+from theorydd.util.custom_exceptions import FormulaException
+from theorydd.walkers.normalizer import NormalizerWalker
+from theorydd.walkers.duoble_negation_walker import DoubleNegWalker
 
 
 def default_phi() -> FNode:

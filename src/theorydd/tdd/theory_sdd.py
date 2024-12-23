@@ -8,25 +8,19 @@ from typing import Dict, List, Set
 from pysmt.fnode import FNode
 from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
-from theorydd.lemma_extractor import extract, find_qvars
-from theorydd.smt_solver import SMTSolver
-from theorydd.smt_solver_full_partial import FullPartialSMTSolver
-from theorydd.smt_solver_partial import PartialSMTSolver
-from theorydd._string_generator import (
-    SDDSequentailStringGenerator,
-    SequentialStringGenerator,
-)
+from theorydd.solvers.lemma_extractor import extract, find_qvars
+from theorydd.solvers.solver import SMTEnumerator
+from theorydd.tdd.theory_dd import TheoryDD
+from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
-from theorydd.walker_sdd import SDDWalker
-from theorydd._dd_dump_util import save_sdd_object as _save_sdd_object
-from theorydd.constants import VALID_VTREE, VALID_SOLVER, SAT
-from theorydd.custom_exceptions import (
-    InvalidVTreeException,
-    InvalidSolverException,
-)
+from theorydd.util._utils import get_solver as _get_solver
+from theorydd.walkers.walker_sdd import SDDWalker
+from theorydd.util._dd_dump_util import save_sdd_object as _save_sdd_object
+from theorydd.constants import VALID_VTREE, SAT
+from theorydd.util.custom_exceptions import InvalidVTreeException
 
 
-class TheorySDD:
+class TheorySDD(TheoryDD):
     """Class to generate and handle T-SDDs
 
     T-SDDs are SDDs with a mixture of boolean atoms and T-atoms
@@ -43,7 +37,7 @@ class TheorySDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
+        solver: str | SMTEnumerator = "total",
         computation_logger: Dict = None,
         verbose: bool = False,
         load_lemmas: str | None = None,
@@ -59,8 +53,8 @@ class TheorySDD:
 
         Args:
             phi (FNode) : a pysmt formula
-            solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
-                Valid solvers are "total", "partial" and "full_partial", or you can pass an instance of a SMTSolver or PartialSMTSolver
+            solver (str | SMTEnumerator) ["partial"]: specifies which solver to use for All-SMT computation.
+                Valid solvers are "total", "partial" and "extended_partial", or you can pass an instance of a SMTEnumerator
             load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
@@ -87,159 +81,81 @@ class TheorySDD:
             computation_logger = {}
         if computation_logger.get("T-SDD") is None:
             computation_logger["T-SDD"] = {}
-        start_time = time.time()
-        if verbose:
-            print("Normalizing phi according to solver...")
+        # get the solver
         if isinstance(solver, str):
-            if solver == "total":
-                smt_solver = SMTSolver()
-            elif solver == "partial":
-                smt_solver = PartialSMTSolver()
-            elif solver == "full_partial":
-                smt_solver = FullPartialSMTSolver()
-            else:
-                raise InvalidSolverException(
-                    solver
-                    + " is not a valid solvers. Valid solvers: "
-                    + str(VALID_SOLVER)
-                )
+            smt_solver = _get_solver(solver)
         else:
             smt_solver = solver
-        phi = formula.get_normalized(phi, smt_solver.get_converter())
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("Phi was normalized in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["phi normalization time"] = elapsed_time
-        if verbose:
-            print("Loading Lemmas...")
-        if tlemmas is not None:
-            computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
-        elif load_lemmas is not None:
-            computation_logger["T-SDD"]["ALL SMT mode"] = "loaded"
-            tlemmas = [formula.read_phi(load_lemmas)]
-        else:
-            computation_logger["T-SDD"]["ALL SMT mode"] = "computed"
-            sat_result, tlemmas, _bm = extract(
-                phi,
-                smt_solver,
-                verbose=verbose,
-                computation_logger=computation_logger["T-SDD"],
-            )
-        tlemmas = list(
-            map(
-                lambda l: formula.get_normalized(l, smt_solver.get_converter()), tlemmas
-            )
-        )
+        
+        # normalize phi
+        phi = self._normalize_input(phi, smt_solver, verbose, computation_logger["T-SDD"])
+
+        # EXTRACTING T-LEMMAS
+        tlemmas, sat_result = self._load_lemmas(phi, smt_solver, tlemmas, load_lemmas, sat_result, verbose, computation_logger["T-SDD"])
+
+        # COMPUTE PHI AND LEMMAS
         phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
+
+        # FINDING QVARS
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
             verbose=verbose,
             computation_logger=computation_logger["T-SDD"],
         )
-        # phi = phi_and_lemmas
+
+        atoms = get_atoms(phi_and_lemmas)
 
         # CREATING VARIABLE MAPPING
-        start_time = time.time()
-        if verbose:
-            print("Creating mapping...")
-        self.mapping = {}
-        atoms = get_atoms(phi_and_lemmas)
-        string_generator = SequentialStringGenerator()
-        for atom in atoms:
-            self.mapping[atom] = string_generator.next_string()
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("Mapping created in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["variable mapping creation time"] = elapsed_time
+        self.mapping = self._compute_mapping(atoms, verbose, computation_logger["T-SDD"])
 
         # BUILDING V-TREE
-        start_time = time.time()
-        if verbose:
-            print("Building V-Tree...")
-        atoms = get_atoms(phi_and_lemmas)
-        var_count = len(atoms)
-        string_generator = SDDSequentailStringGenerator()
-        self.name_to_atom_map = {}
-        for atom in atoms:
-            self.name_to_atom_map[string_generator.next_string().upper()] = atom
-        # print(name_to_atom_map)
-        # for now just use appearance order in phi
-        var_order = list(range(1, var_count + 1))
-        self.vtree = Vtree(var_count, var_order, vtree_type)
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("V-Tree built in ", elapsed_time, " seconds")
-        computation_logger["T-SDD"]["V-Tree building time"] = elapsed_time
+        self._build_vtree(atoms, vtree_type, verbose, computation_logger["T-SDD"])
 
         # BUILDING SDD WITH WALKER
         start_time = time.time()
         if verbose:
             print("Preparing to build T-SDD...")
         self.manager = SddManager.from_vtree(self.vtree)
-        sdd_literals = [self.manager.literal(i) for i in range(1, var_count + 1)]
-        atom_literal_map = dict(zip(atoms, sdd_literals))
-        walker = SDDWalker(atom_literal_map, self.manager)
+        sdd_literals = [self.manager.literal(i) for i in range(1, len(atoms) + 1)]
+        self.atom_literal_map = dict(zip(atoms, sdd_literals))
+        walker = SDDWalker(self.atom_literal_map, self.manager)
+        elapsed_time = time.time() - start_time
         if verbose:
             print("BDD preparation phase completed in ", elapsed_time, " seconds")
         computation_logger["T-SDD"]["DD preparation time"] = elapsed_time
 
         if sat_result is None or sat_result == SAT:
-            start_time = time.time()
-            if verbose:
-                print("Building SDD for phi...")
-            phi_sdd = walker.walk(phi)
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("SDD built in ", elapsed_time, " seconds")
-            computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
-
-            # BUILDING T-LEMMAS SDD
-            start_time = time.time()
-            if verbose:
-                print("Building T-SDD for big and of t-lemmas...")
-            tlemmas_sdd = walker.walk(formula.big_and(tlemmas))
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("SDD built in ", elapsed_time, " seconds")
-            computation_logger["T-SDD"]["phi DD building time"] = elapsed_time
-
-            # QUANTIFYING OVER FRESH T-ATOMS
-            start_time = time.time()
-            if verbose:
-                print("Quantifying over fresh T-atoms...")
-            existential_map = [0]
-            for smt_atom in atom_literal_map.keys():
-                if smt_atom in self.qvars:
-                    existential_map.append(1)
-                else:
-                    existential_map.append(0)
-            tlemmas_sdd = self.manager.exists_multiple(
-                array("i", existential_map), tlemmas_sdd
-            )
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("Quantified over fresh T-atoms in ", elapsed_time, " seconds")
-            computation_logger["T-SDD"]["fresh T-atoms quantification time"] = elapsed_time
-
-            # JOINING PHI SDD AND TLEMMAS SDD
-            start_time = time.time()
-            if verbose:
-                print("Joining phi BDD and lemmas T-SDD...")
-            self.root = phi_sdd & tlemmas_sdd
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("T-SDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
-            computation_logger["T-SDD"]["DD joining time"] = elapsed_time
+            self.root = self._build(phi, tlemmas, walker, verbose, computation_logger["T-SDD"])
         else:
-            start_time = time.time()
-            if verbose:
-                print("Building T-SDD for UNSAT formula...")
-            self.root = walker.walk(formula.bottom())
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("T-SDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
-            computation_logger["T-SDD"]["UNSAT DD building time"] = elapsed_time
+            self.root = self._build_unsat(walker, verbose, computation_logger["T-SDD"])
+
+    def _enumerate_qvars(self, tlemmas_dd, mapped_qvars) -> object:
+        """Enumerates over the fresh T-atoms in the T-lemmas"""
+        existential_map = [0]
+        for smt_atom in self.atom_literal_map.keys():
+            if smt_atom in self.qvars:
+                existential_map.append(1)
+            else:
+                existential_map.append(0)
+        return self.manager.exists_multiple(
+            array("i", existential_map), tlemmas_dd
+        )
+
+    def _build_vtree(self, atoms: List[FNode], vtree_type, verbose: bool, computation_logger: Dict) -> None:
+        start_time = time.time()
+        if verbose:
+            print("Building V-Tree...")
+        self.name_to_atom_map = {k: v for k, v in self.mapping.items()}
+        # print(name_to_atom_map)
+        # for now just use appearance order in phi
+        var_count = len(atoms)
+        var_order = list(range(1, var_count + 1))
+        self.vtree = Vtree(var_count, var_order, vtree_type)
+        elapsed_time = time.time() - start_time
+        if verbose:
+            print("V-Tree built in ", elapsed_time, " seconds")
+        computation_logger["V-Tree building time"] = elapsed_time
 
     def __len__(self) -> int:
         return max(self.root.count(), 1)
@@ -277,7 +193,7 @@ class TheorySDD:
         wmc: WmcManager = self.root.wmc(log_mode=False)
         return wmc.propagate() / (2 ** len(self.qvars))
 
-    def dump(
+    def graphic_dump(
         self,
         output_file: str,
         print_mapping: bool = False,
@@ -310,7 +226,7 @@ class TheorySDD:
                 " is not supported",
             )
 
-    def dump_vtree(self, output_file: str) -> None:
+    def graphic_dump_vtree(self, output_file: str) -> None:
         """Save the T-SDD on a file with Graphviz
 
         Args:

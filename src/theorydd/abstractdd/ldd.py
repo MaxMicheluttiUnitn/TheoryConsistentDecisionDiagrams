@@ -7,16 +7,16 @@ from pysmt.shortcuts import BOOL, INT, REAL
 from pysmt.fnode import FNode
 from dd import ldd as _ldd
 
-from theorydd.walker_ldd import LDDWalker
+from theorydd.walkers.walker_ldd import LDDWalker
 import theorydd.formula as _formula
-from theorydd.custom_exceptions import (
+from theorydd.util.custom_exceptions import (
     InvalidLDDTheoryException,
     UnsupportedSymbolException,
 )
-from theorydd._string_generator import SequentialStringGenerator
+from theorydd.util._string_generator import SequentialStringGenerator
 
 
-class TheoryLDD:
+class LDD:
     """Class to handle LDDs. Uses @masinag's dd and
     allows compatibility with pysmt FNodes
 
@@ -64,8 +64,7 @@ class TheoryLDD:
 
         # FINDING VARS
         start_time = time.time()
-        if verbose:
-            print("Building LDD...")
+        print("Finding symbols...")
         symbols = _formula.get_symbols(phi)
         self.total_atoms = len(_formula.get_atoms(phi))
         boolean_symbols: dict[FNode, str] = {}
@@ -83,18 +82,27 @@ class TheoryLDD:
                 int_ctr += 1
             else:
                 raise UnsupportedSymbolException(str(s))
+        elapsed_time = time.time() - start_time
+        if verbose:
+            print("Symbols found in ", elapsed_time, " seconds")
 
         # BUILDING LDD
+        self._build(phi, boolean_symbols, integer_symbols, ldd_theory, verbose, computation_logger["LDD"])
+
+    def _build(self, phi: FNode, boolean_symbols: dict, integer_symbols: dict, theory, verbose: bool, computation_logger: Dict):
         # LDD(Id theory,#int vars,#bool vars)
+        start_time = time.time()
+        if verbose:
+            print("Building LDD...")
         self.manager = _ldd.LDD(
-            ldd_theory, len(integer_symbols.keys()), len(boolean_symbols.keys())
+            theory, len(integer_symbols.keys()), len(boolean_symbols.keys())
         )
         walker = LDDWalker(boolean_symbols, integer_symbols, self.manager)
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
         if verbose:
             print("LDD for phi built in ", elapsed_time, " seconds")
-        computation_logger["LDD"]["DD building time"] = elapsed_time
+        computation_logger["DD building time"] = elapsed_time
 
     def __len__(self) -> int:
         return len(self.root)
@@ -113,7 +121,7 @@ class TheoryLDD:
         return self.manager.count(self.root,nvars=support_size)
 
     def dump(self, output_file: str) -> None:
-        """Save the LDD on a file with Graphviz
+        """Save the LDD on a file
 
         Args:
             output_file (str): the path to the output file

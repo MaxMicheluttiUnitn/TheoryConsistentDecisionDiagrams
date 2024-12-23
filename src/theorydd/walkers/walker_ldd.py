@@ -9,7 +9,7 @@ from pysmt.shortcuts import BOOL
 from pysmt.walkers import DagWalker, handles
 import pysmt.operators as op
 
-from theorydd.custom_exceptions import UnsupportedNodeException
+from theorydd.util.custom_exceptions import UnsupportedNodeException
 
 
 @dataclass

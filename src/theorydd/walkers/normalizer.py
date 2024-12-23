@@ -6,7 +6,7 @@ from pysmt.fnode import FNode
 
 from pysmt.shortcuts import And, Or, Iff, Implies, TRUE, FALSE, Not, Ite
 
-from theorydd.custom_exceptions import UnsupportedNodeException
+from theorydd.util.custom_exceptions import UnsupportedNodeException
 
 
 class NormalizerWalker(DagWalker):

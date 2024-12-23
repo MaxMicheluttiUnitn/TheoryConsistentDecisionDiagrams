@@ -1,12 +1,11 @@
 """tests for T-SDDS"""
 from copy import deepcopy
 
-import pytest
-from theorydd.theory_sdd import TheorySDD
+from theorydd.tdd.theory_sdd import TheorySDD
 import theorydd.formula as formula
-from theorydd.smt_solver_partial import PartialSMTSolver
-from theorydd.smt_solver import SMTSolver
-from pysmt.shortcuts import Or, LT, REAL, Symbol, And, Not, is_sat, Iff
+from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
+from theorydd.solvers.mathsat_partial_extended import MathSATExtendedPartialEnumerator
+from pysmt.shortcuts import Or, LT, REAL, Symbol, And, Not
 
 
 def test_init_default():
@@ -16,7 +15,7 @@ def test_init_default():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATExtendedPartialEnumerator()
     partial.check_all_sat(phi, None)
     models = partial.get_models()
     tsdd = TheorySDD(phi, "partial")
@@ -33,7 +32,7 @@ def test_init_with_known_lemmas():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATExtendedPartialEnumerator()
     partial.check_all_sat(phi, None)
     lemmas = partial.get_theory_lemmas()
     models = partial.get_models()
@@ -51,7 +50,7 @@ def test_init_updated_computation_logger():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATExtendedPartialEnumerator()
     partial.check_all_sat(phi, None)
     models = partial.get_models()
     logger = {}
@@ -75,7 +74,7 @@ def test_init_unsat_formula():
         LT(Symbol("Y", REAL), Symbol("Zr", REAL)),
         LT(Symbol("Zr", REAL), Symbol("X", REAL)),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATExtendedPartialEnumerator()
     partial.check_all_sat(phi, None)
     tsdd = TheorySDD(phi, "partial")
     assert tsdd.count_nodes() == 1, "TSDD is only False node"
@@ -88,7 +87,7 @@ def test_init_tautology():
         LT(Symbol("X", REAL), Symbol("Y", REAL)),
         Not(LT(Symbol("X", REAL), Symbol("Y", REAL))),
     )
-    partial = PartialSMTSolver()
+    partial = MathSATExtendedPartialEnumerator()
     partial.check_all_sat(phi, None)
     tsdd = TheorySDD(phi, "partial")
     assert tsdd.count_nodes() == 1, "TSDD is only True node"
@@ -175,10 +174,10 @@ test_phi = [
 def test_lemma_loading_total():
     """tests loading data with total solver"""
     phi = formula.read_phi("./tests/items/rng.smt")
-    total = SMTSolver()
+    total = MathSATTotalEnumerator()
     tbdd = TheorySDD(phi, solver=total, load_lemmas="./tests/items/rng_lemmas.smt")
     other_phi = formula.read_phi("./tests/items/rng.smt")
-    other_total = SMTSolver()
+    other_total = MathSATTotalEnumerator()
     other_tbdd = TheorySDD(other_phi, solver=other_total)
     assert (
         tbdd.count_models() == other_tbdd.count_models()
@@ -188,10 +187,10 @@ def test_lemma_loading_total():
 def test_lemma_loading_partial():
     """tests loading data with partial solver"""
     phi = formula.read_phi("./tests/items/rng.smt")
-    partial = PartialSMTSolver()
+    partial = MathSATExtendedPartialEnumerator()
     tbdd = TheorySDD(phi, solver=partial, load_lemmas="./tests/items/rng_lemmas.smt")
     other_phi = formula.read_phi("./tests/items/rng.smt")
-    other_partial = PartialSMTSolver()
+    other_partial = MathSATExtendedPartialEnumerator()
     other_tbdd = TheorySDD(other_phi, solver=other_partial)
     assert (
         tbdd.count_models() == other_tbdd.count_models()

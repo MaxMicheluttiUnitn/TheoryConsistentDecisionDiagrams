@@ -4,6 +4,11 @@ import pickle
 from pysmt.fnode import FNode
 from dd import cudd as cudd_bdd
 from theorydd.constants import VALID_SOLVER
+from theorydd.solvers.solver import SMTEnumerator
+from theorydd.solvers.mathsat_partial import MathSATPartialEnumerator
+from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
+from theorydd.solvers.mathsat_partial_extended import MathSATExtendedPartialEnumerator
+from theorydd.util.custom_exceptions import InvalidSolverException
 
 
 def is_valid_solver(solver: str) -> bool:
@@ -77,3 +82,21 @@ def cudd_dump(root: object, file_name: str) -> None:
     with open(pickle_fname, "wb") as f:
         pickle.dump(d, f, protocol=2)
     bdd.dump(dddmp_fname, [root])
+
+
+def get_solver(solver_name: str) -> SMTEnumerator:
+    """Returns a SMTEnumerator object according to the solver name
+
+    Args:
+        solver_name (str): the name of the solver
+
+    Returns:
+        SMTEnumerator: a SMTEnumerator object
+    """
+    if solver_name == "total":
+        return MathSATTotalEnumerator()
+    if solver_name == "partial":
+        return MathSATPartialEnumerator()
+    if solver_name == "extended_partial":
+        return MathSATExtendedPartialEnumerator()
+    raise InvalidSolverException(f"Invalid solver {solver_name}")

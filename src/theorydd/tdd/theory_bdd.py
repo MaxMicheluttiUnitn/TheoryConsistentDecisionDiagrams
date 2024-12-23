@@ -8,20 +8,22 @@ from pysmt.fnode import FNode
 import pydot
 from dd import cudd as cudd_bdd
 from theorydd import formula
-from theorydd._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
-from theorydd._utils import cudd_dump as _cudd_dump, cudd_load as _cudd_load
-from theorydd.smt_solver import SMTSolver
-from theorydd.smt_solver_full_partial import FullPartialSMTSolver
-from theorydd.smt_solver_partial import PartialSMTSolver
-from theorydd._string_generator import SequentialStringGenerator
+from theorydd.util._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
+from theorydd.util._utils import (
+    cudd_dump as _cudd_dump,
+    cudd_load as _cudd_load,
+    get_solver as _get_solver,
+)
+from theorydd.solvers.solver import SMTEnumerator
+from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
-from theorydd.walker_bdd import BDDWalker
-from theorydd.lemma_extractor import extract, find_qvars
-from theorydd.constants import VALID_SOLVER, UNSAT, SAT
-from theorydd.custom_exceptions import InvalidSolverException
+from theorydd.walkers.walker_bdd import BDDWalker
+from theorydd.solvers.lemma_extractor import extract, find_qvars
+from theorydd.constants import SAT
+from theorydd.tdd.theory_dd import TheoryDD
 
 
-class TheoryBDD:
+class TheoryBDD(TheoryDD):
     """Class to generate and handle T-BDDs
 
     TBDDs are BDDs with a mixture of boolean atoms and T-atoms
@@ -36,7 +38,7 @@ class TheoryBDD:
     def __init__(
         self,
         phi: FNode,
-        solver: str | SMTSolver | PartialSMTSolver | FullPartialSMTSolver = "partial",
+        solver: str | SMTEnumerator = "total",
         load_lemmas: str | None = None,
         tlemmas: List[FNode] = None,
         sat_result: bool | None = None,
@@ -51,15 +53,15 @@ class TheoryBDD:
 
         Args:
             phi (FNode) : a pysmt formula
-            solver (str | SMTSolver | PartialSMTSolver) ["partial"]: specifies which solver to use for All-SMT computation.
-                Valid solvers are "partial", "total" and "full_partial", or you can pass an instance of a SMTSolver or PartialSMTSolver
+            solver (str | SMTEnumerator) ["total"]: specifies which solver to use for All-SMT computation.
+                Valid solvers are "partial", "total" and "extended_partial", or you can pass an instance of a SMTEnumerator
             load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
             sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
             verbose (bool) [False]: set it to True to log computation on stdout
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info. 
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info.
             folder_name (str | None) [None]: the path to a folder where data to load the T-BDD is stored.
                 If this is not None, then all other parameters are ignored
         """
@@ -70,85 +72,51 @@ class TheoryBDD:
             computation_logger = {}
         if computation_logger.get("T-BDD") is None:
             computation_logger["T-BDD"] = {}
-        start_time = time.time()
-        if verbose:
-            print("Normalizing phi according to solver...")
+
+        # NORMALIZE PHI
         if isinstance(solver, str):
-            if solver == "total":
-                smt_solver = SMTSolver()
-            elif solver == "partial":
-                smt_solver = PartialSMTSolver()
-            elif solver == "full_partial":
-                smt_solver = FullPartialSMTSolver()
-            else:
-                raise InvalidSolverException(
-                    solver
-                    + " is not a valid solvers. Valid solvers: "
-                    + str(VALID_SOLVER)
-                )
+            smt_solver = _get_solver(solver)
         else:
             smt_solver = solver
-        phi = formula.get_normalized(phi, smt_solver.get_converter())
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("Phi was normalized in ", elapsed_time, " seconds")
-        computation_logger["T-BDD"]["phi normalization time"] = elapsed_time
-        if verbose:
-            print("Loading Lemmas...")
-        if tlemmas is not None:
-            computation_logger["T-BDD"]["ALL SMT mode"] = "loaded"
-        elif load_lemmas is not None:
-            computation_logger["T-BDD"]["ALL SMT mode"] = "loaded"
-            tlemmas = [formula.read_phi(load_lemmas)]
-        else:
-            computation_logger["T-BDD"]["ALL SMT mode"] = "computed"
-            sat_result, tlemmas, _bm = extract(
-                phi,
-                smt_solver,
-                verbose=verbose,
-                computation_logger=computation_logger["T-BDD"],
-            )
-        tlemmas = list(
-            map(
-                lambda l: formula.get_normalized(l, smt_solver.get_converter()), tlemmas
-            )
+        phi = self._normalize_input(
+            phi, smt_solver, verbose, computation_logger["T-BDD"]
         )
-        # BASICALLY PADDING TO AVOID POSSIBLE ISSUES
-        while len(tlemmas) < 2:
-            tlemmas.append(formula.top())
+
+        # LOAD LEMMAS
+        tlemmas, sat_result = self._load_lemmas(
+            phi,
+            smt_solver,
+            tlemmas,
+            load_lemmas,
+            sat_result,
+            verbose,
+            computation_logger["T-BDD"],
+        )
+
+        # COMPUTE PHI AND LEMMAS
         phi_and_lemmas = formula.get_phi_and_lemmas(phi, tlemmas)
+
+        # FIND QVARS
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
             verbose=verbose,
             computation_logger=computation_logger["T-BDD"],
         )
-        # print(len(self.qvars))
+
         atoms = get_atoms(phi_and_lemmas)
-        # print(len(atoms))
-        # phi = phi_and_lemmas
 
         # CREATING VARIABLE MAPPING
-        start_time = time.time()
-        if verbose:
-            print("Creating mapping...")
-        self.mapping = {}
+        self.mapping = self._compute_mapping(
+            atoms, verbose, computation_logger["T-BDD"]
+        )
 
-        string_generator = SequentialStringGenerator()
-        for atom in atoms:
-            self.mapping[atom] = string_generator.next_string()
-        elapsed_time = time.time() - start_time
-        if verbose:
-            print("Mapping created in ", elapsed_time, " seconds")
-        computation_logger["T-BDD"]["variable mapping creation time"] = elapsed_time
-
-        # BUILDING ACTUAL BDD
+        # PREPARE FOR BUILDING
         start_time = time.time()
         if verbose:
             print("starting T-BDD preparation phase...")
         self.bdd = cudd_bdd.BDD()
         appended_values = set()
-        mapped_qvars = [self.mapping[atom] for atom in self.qvars]
         all_values = [self.mapping[atom] for atom in self.qvars]
         for atom in self.qvars:
             appended_values.add(self.mapping[atom])
@@ -165,63 +133,14 @@ class TheoryBDD:
         if verbose:
             print("BDD preparation phase completed in ", elapsed_time, " seconds")
         computation_logger["T-BDD"]["DD preparation time"] = elapsed_time
-        if sat_result is None or sat_result == SAT:
-            start_time = time.time()
-            if verbose:
-                print("Building BDD for phi...")
-            phi_bdd = walker.walk(phi)
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("BDD for phi built in ", elapsed_time, " seconds")
-            computation_logger["T-BDD"]["phi DD building time"] = elapsed_time
-            
-            start_time = time.time()
-            if verbose:
-                print("Building T-BDD for big and of t-lemmas...")
-            tlemmas_bdd = walker.walk(formula.big_and(tlemmas))
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("BDD for T-lemmas built in ", elapsed_time, " seconds")
-            computation_logger["T-BDD"]["t-lemmas DD building time"] = elapsed_time
 
-            # ENUMERATING OVER FRESH T-ATOMS
-            if len(mapped_qvars) > 0:
-                start_time = time.time()
-                if verbose:
-                    print("Enumerating over fresh T-atoms...")
-                tlemmas_bdd = cudd_bdd.and_exists(tlemmas_bdd, self.bdd.true, mapped_qvars)
-                elapsed_time = time.time() - start_time
-                if verbose:
-                    print(
-                        "fresh T-atoms quantification completed in ",
-                        elapsed_time,
-                        " seconds",
-                    )
-                computation_logger["T-BDD"][
-                    "fresh T-atoms quantification time"
-                ] = elapsed_time
-            else:
-                computation_logger["T-BDD"]["fresh T-atoms quantification time"] = 0
-            # JOINING PHI BDD AND TLEMMAS BDD
-            start_time = time.time()
-            if verbose:
-                print("Joining phi BDD and lemmas T-BDD...")
-            self.root = phi_bdd & tlemmas_bdd
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
-            computation_logger["T-BDD"]["DD joining time"] = elapsed_time
+        if sat_result is None or sat_result == SAT:
+            self.root = self._build(phi,tlemmas,walker,verbose,computation_logger["T-BDD"])
         else:
-            start_time = time.time()
-            if verbose:
-                print("Building T-BDD for UNSAT formula...")
-            self.root = walker.walk(formula.bottom())
-            elapsed_time = time.time() - start_time
-            if verbose:
-                print("T-BDD for phi and t-lemmas joint in ", elapsed_time, " seconds")
-            computation_logger["T-BDD"]["UNSAT DD building time"] = elapsed_time
-        
-        
+            self.root = self._build_unsat(walker,verbose,computation_logger["T-BDD"])
+
+    def _enumerate_qvars(self, tlemmas_dd: object, mapped_qvars: List[object]) -> object:
+        return cudd_bdd.and_exists(tlemmas_dd, self.bdd.true, mapped_qvars)
 
     def __len__(self) -> int:
         """returns the number of nodes in the T-BDD"""
@@ -239,7 +158,7 @@ class TheoryBDD:
         """returns the amount of models in the T-BDD"""
         return self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
 
-    def dump(
+    def graphic_dump(
         self,
         output_file: str,
         print_mapping: bool = False,
@@ -327,7 +246,9 @@ class TheoryBDD:
             raise FileNotFoundError(
                 f"Folder {folder_path} does not exist, cannot load T-BDD"
             )
-        self.mapping = formula.load_abstraction_function(f"{folder_path}/abstraction.json")
+        self.mapping = formula.load_abstraction_function(
+            f"{folder_path}/abstraction.json"
+        )
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
         self.bdd = cudd_bdd.BDD()
         self.bdd.declare(*self.mapping.values())
@@ -336,6 +257,7 @@ class TheoryBDD:
         with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
             qvars_indexes = json.load(input_data)
             self.qvars = [reverse_mapping[qvar_id] for qvar_id in qvars_indexes]
+
 
 def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
     """Load a T-BDD from a file
@@ -346,4 +268,4 @@ def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
     Returns:
         TheoryBDD: the T-BDD loaded from the file
     """
-    return TheoryBDD(None,folder_name=folder_path)
+    return TheoryBDD(None, folder_name=folder_path)

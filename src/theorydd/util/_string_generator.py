@@ -72,36 +72,6 @@ def _concatenate_string_array(array: List[str]) -> str:
         result += string
     return result
 
-
-class SDDSequentailStringGenerator:
-    """A class that generates possibly infinitely many strings in sequential order"""
-
-    def __init__(self) -> None:
-        self._string_serial = 0
-
-    def next_string(self) -> str:
-        """generates the next string in sequential order"""
-        if self._string_serial < 26:
-            temp = self._string_serial
-            result, remainder = divmod(temp, 26)
-            str_builder = []
-            next_char = _char_from_remainder(remainder)
-            str_builder.append(next_char)
-            while result > 0:
-                result, remainder = divmod(result - 1, 26)
-                next_char = _char_from_remainder(remainder)
-                str_builder.append(next_char)
-            self._string_serial += 1
-            return _concatenate_string_array(str_builder)
-        else:
-            self._string_serial += 1
-            return str(self._string_serial)
-
-    def reset(self) -> None:
-        """resets the generator"""
-        self._string_serial = 0
-
-
 class SequentialStringGenerator:
     """A class that generates possibly infinitely many strings in sequential order"""
 

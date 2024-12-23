@@ -1,4 +1,4 @@
-from theorydd.abstraction_bdd import AbstractionBDD
+from theorydd.abstractdd.abstraction_bdd import AbstractionBDD
 from pysmt.shortcuts import And, Implies, Or, Iff, LT, LE, Real, Symbol, REAL, Plus
 
 

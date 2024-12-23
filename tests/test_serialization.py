@@ -1,10 +1,10 @@
 """Serialization tests for theorydd package"""
 
-from theorydd.abstraction_bdd import AbstractionBDD, abstraction_bdd_load_from_folder
-from theorydd.abstraction_sdd import AbstractionSDD, abstraction_sdd_load_from_folder
+from theorydd.abstractdd.abstraction_bdd import AbstractionBDD, abstraction_bdd_load_from_folder
+from theorydd.abstractdd.abstraction_sdd import AbstractionSDD, abstraction_sdd_load_from_folder
 import theorydd.formula as formula
-from theorydd.theory_bdd import TheoryBDD, tbdd_load_from_folder
-from theorydd.theory_sdd import TheorySDD, tsdd_load_from_folder
+from theorydd.tdd.theory_bdd import TheoryBDD, tbdd_load_from_folder
+from theorydd.tdd.theory_sdd import TheorySDD, tsdd_load_from_folder
 
 def test_abstraction_bdd_serialization():
     """tests abstraction BDD serialization"""

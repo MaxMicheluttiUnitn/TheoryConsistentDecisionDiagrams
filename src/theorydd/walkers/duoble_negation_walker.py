@@ -1,17 +1,12 @@
 """this module defines a Walker that takes a pysmt formula and removes all double negations"""
 
-from collections import deque
-from typing import List
-from dd.autoref import BDD
 from pysmt.fnode import FNode
 from pysmt.walkers import DagWalker, handles
 import pysmt.operators as op
 
-from theorydd.custom_exceptions import UnsupportedNodeException
-
 
 class DoubleNegWalker(DagWalker):
-    """A walker to translate the DAG formula quickly with memoization into the BDD"""
+    """A walker to remove double negations from a pysmt FNode and its children"""
 
     def __init__(
         self,

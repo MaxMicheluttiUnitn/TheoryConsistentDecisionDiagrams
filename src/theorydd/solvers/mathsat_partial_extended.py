@@ -1,10 +1,12 @@
 """this module handles interactions with the mathsat solver"""
+
 from typing import List, Dict
 from pysmt.shortcuts import Solver, And
 from pysmt.fnode import FNode
 import mathsat
 from allsat_cnf.polarity_cnfizer import PolarityCNFizer
 from theorydd.constants import SAT, UNSAT
+from theorydd.solvers.solver import SMTEnumerator
 
 
 def _allsat_callback(model, converter, models):
@@ -14,31 +16,34 @@ def _allsat_callback(model, converter, models):
     return 1
 
 
-class PartialSMTSolver:
-    """A wrapper for the mathsat T-solver"""
+class MathSATExtendedPartialEnumerator(SMTEnumerator):
+    """A wrapper for the mathsat T-solver.
+
+    Computes all-SMT by first computing partial assignments and then extending them to total ones.
+    The result of the enumeration is a total enumeration of truth assignments."""
 
     def __init__(self) -> None:
         solver_options_dict = {
             "dpll.allsat_minimize_model": "true",  # - total truth assignments
-            #"theory.pure_literal_filtering": "true",
+            # "theory.pure_literal_filtering": "true",
             # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
             "preprocessor.toplevel_propagation": "false",
             "preprocessor.simplification": "0",  # from mathsat
             "dpll.store_tlemmas": "true",  # - necessary to obtain t-lemmas
-            "theory.la.split_rat_eq":"false", 
+            "theory.la.split_rat_eq": "false",
         }
         solver_options_dict_total = {
             "dpll.allsat_minimize_model": "false",  # - total truth assignments
-            #"theory.pure_literal_filtering": "true",
+            # "theory.pure_literal_filtering": "true",
             # "dpll.allsat_allow_duplicates": "false", # - to produce not necessarily disjoint truth assignments.
             #                                          # can be set to true only if minimize_model=true.
             # - necessary to disable some processing steps
             "preprocessor.toplevel_propagation": "false",
             "preprocessor.simplification": "0",  # from mathsat
             "dpll.store_tlemmas": "true",  # - necessary to obtain t-lemmas
-            "theory.la.split_rat_eq":"false", 
+            "theory.la.split_rat_eq": "false",
         }
         self.solver = Solver("msat", solver_options=solver_options_dict)
         self.solver_total = Solver("msat", solver_options=solver_options_dict_total)
@@ -53,7 +58,7 @@ class PartialSMTSolver:
         self, phi: FNode, boolean_mapping: Dict[FNode, FNode] = None
     ) -> bool:
         """Computes All-SMT for the SMT-formula phi using partial assignment and Tsetsin CNF-ization
-        
+
         Args:
             phi (FNode): a pysmt formula
             boolean_mapping (Dict[FNode, FNode]) [None]: unused, for compatibility with SMTSolver
@@ -70,7 +75,9 @@ class PartialSMTSolver:
 
         self.solver.reset_assertions()
         self.solver_total.reset_assertions()
-        phi_tsetsin = PolarityCNFizer(nnf=True, mutex_nnf_labels=True).convert_as_formula(phi)
+        phi_tsetsin = PolarityCNFizer(
+            nnf=True, mutex_nnf_labels=True
+        ).convert_as_formula(phi)
         self.solver.add_assertion(phi_tsetsin)
 
         partial_models = []

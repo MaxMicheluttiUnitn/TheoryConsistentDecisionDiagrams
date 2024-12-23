@@ -4,15 +4,13 @@ import time
 from typing import Dict, List, Tuple
 from pysmt.fnode import FNode
 from theorydd import formula
-from theorydd.smt_solver import SMTSolver
-from theorydd.smt_solver_full_partial import FullPartialSMTSolver
-from theorydd.smt_solver_partial import PartialSMTSolver
+from theorydd.solvers.solver import SMTEnumerator
 from theorydd.constants import SAT, UNSAT
 
 
 def extract(
     phi: FNode,
-    smt_solver: SMTSolver | PartialSMTSolver | FullPartialSMTSolver,
+    smt_solver: SMTEnumerator,
     verbose: bool = False,
     use_boolean_mapping: bool = True,
     computation_logger: Dict = None,
@@ -58,7 +56,7 @@ def extract(
 
 
 def find_qvars(
-    original_phi, phi_and_lemmas, computation_logger: Dict = None, verbose: bool = False
+    original_phi: FNode, phi_and_lemmas: FNode, computation_logger: Dict = None, verbose: bool = False
 ):
     """Finds the atoms on which to existentially quantify when building a T-DD (the fresh T-atoms from T-lemmas)
 

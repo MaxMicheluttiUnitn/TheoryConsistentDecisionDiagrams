@@ -6,8 +6,8 @@ from pysmt.shortcuts import BOOL, REAL, INT
 from pywmi.domain import Domain
 
 import theorydd.formula as _formula
-from theorydd.walker_xsdd import XsddParser
-from theorydd.custom_exceptions import UnsupportedSymbolException
+from theorydd.walkers.walker_xsdd import XsddParser
+from theorydd.util.custom_exceptions import UnsupportedSymbolException
 
 
 class TheoryXSDD:
