@@ -8,7 +8,6 @@ from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
 from theorydd.abstractdd.abstractdd import AbstractDD
 from theorydd.solvers.solver import SMTEnumerator
-from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.formula import get_atoms
 from theorydd.walkers.walker_sdd import SDDWalker
 from theorydd.tdd.theory_sdd import vtree_load_from_folder as _vtree_load_from_folder
@@ -108,7 +107,11 @@ class AbstractionSDD(AbstractDD):
         computation_logger["DD building time"] = elapsed_time
 
     def _build_vtree(
-        self, vtree_type: str, atoms: List[FNode], verbose: bool, computation_logger: Dict
+        self,
+        vtree_type: str,
+        atoms: List[FNode],
+        verbose: bool,
+        computation_logger: Dict,
     ) -> Vtree:
         start_time = time.time()
         if verbose:

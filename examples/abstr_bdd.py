@@ -35,7 +35,7 @@ def main():
     print("Size in nodes: ", bdd.count_nodes())
 
     # DUMP YOUR DD ON A SVG FILE
-    bdd.dump("abstraction_bdd_example.svg")
+    bdd.graphic_dump("abstraction_bdd_example.svg")
 
     # CHECK YOUR LOGGER
     print(logger)

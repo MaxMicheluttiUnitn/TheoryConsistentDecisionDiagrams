@@ -36,10 +36,10 @@ def main():
     print("Size in nodes: ", sdd.count_nodes())
 
     # DUMP YOUR DD ON A SVG FILE
-    sdd.dump("abstraction_sdd_example.svg")
+    sdd.graphic_dump("abstraction_sdd_example.svg")
 
     # DUMP THE V-TREE ON A SVG FILE
-    sdd.dump_vtree("abstraction_sdd_vtree_example.svg")
+    sdd.graphic_dump_vtree("abstraction_sdd_vtree_example.svg")
 
     # CHECK YOUR LOGGER
     print(logger)
