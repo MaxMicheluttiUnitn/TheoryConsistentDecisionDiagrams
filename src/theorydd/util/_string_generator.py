@@ -1,6 +1,17 @@
 """this module defines a Walker that takes an object that 
 sequantially generates strings of letters"""
 
+def _next_char(c: str) -> str:
+    """returns the next character in the alphabet,
+    
+    Args:
+        c (str): a single character between 'a' and 'y'
+    
+    Returns:
+        str: the next character in the alphabet
+    """
+    return chr(ord(c) + 1)
+
 
 class SequentialStringGenerator:
     """A class that generates possibly infinitely many strings in sequential order"""
@@ -17,16 +28,26 @@ class SequentialStringGenerator:
             self._last_string = "a"
             return self._last_string
 
-        # if the last string ends with "z", add "a" to the end
+        # if the last string ends with "z"
         last_char = self._last_string[-1]
         if last_char == "z":
-            self._last_string += "a"
+            # find the last character that is not "z"
+            # and increment it
+            # followed by changing all the characters after it to "a"
+            for j in range(len(self._last_string) - 1, -1, -1):
+                if self._last_string[j] != "z":
+                    tail_zs_length = len(self._last_string) - j - 1
+                    # last_string = last_string until j-th character + next_char(last non z) + a tail of a's
+                    self._last_string = self._last_string[:j] + _next_char(self._last_string[j]) + ("a" * tail_zs_length)
+                    return self._last_string
+            
+            # if they are all z's, change string to all a's and add an a to the end
+            self._last_string = "a" * len(self._last_string) + "a"
             return self._last_string
 
-        # otherwise, increment the last character
+        # otherwise, just increment the last character
         # (example "b" -> "c", "d" -> "e")
-        new_last_char = chr(ord(last_char) + 1)
-        self._last_string = self._last_string[:-1] + new_last_char
+        self._last_string = self._last_string[:-1] + _next_char(last_char)
         return self._last_string
 
     def reset(self) -> None:
@@ -37,5 +58,5 @@ class SequentialStringGenerator:
 
 if __name__ == "__main__":
     s = SequentialStringGenerator()
-    for i in range(0, 100):
+    for i in range(0, 1000000):
         print(s.next_string())
