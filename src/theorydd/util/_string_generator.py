@@ -1,12 +1,13 @@
-"""this module defines a Walker that takes an object that 
+"""this module defines an object that 
 sequantially generates strings of letters"""
+
 
 def _next_char(c: str) -> str:
     """returns the next character in the alphabet,
-    
+
     Args:
         c (str): a single character between 'a' and 'y'
-    
+
     Returns:
         str: the next character in the alphabet
     """
@@ -38,9 +39,13 @@ class SequentialStringGenerator:
                 if self._last_string[j] != "z":
                     tail_zs_length = len(self._last_string) - j - 1
                     # last_string = last_string until j-th character + next_char(last non z) + a tail of a's
-                    self._last_string = self._last_string[:j] + _next_char(self._last_string[j]) + ("a" * tail_zs_length)
+                    self._last_string = (
+                        self._last_string[:j]
+                        + _next_char(self._last_string[j])
+                        + ("a" * tail_zs_length)
+                    )
                     return self._last_string
-            
+
             # if they are all z's, change string to all a's and add an a to the end
             self._last_string = "a" * len(self._last_string) + "a"
             return self._last_string
