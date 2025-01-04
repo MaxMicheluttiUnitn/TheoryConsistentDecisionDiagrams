@@ -1,5 +1,8 @@
-"""XSDD generation module"""
+"""XSDD generation module
 
+WARNING - This module is not maintained and may be removed in future versions"""
+
+import warnings
 from typing import Dict
 from pysmt.fnode import FNode
 from pysmt.shortcuts import BOOL, REAL, INT
@@ -12,7 +15,7 @@ from theorydd.util.custom_exceptions import UnsupportedSymbolException
 
 class TheoryXSDD:
     """Class to build and handle XSDDs
-    
+
     XSDD are T-DDs specifically made for WMI. They
     are an extension of XSDD and the theory is only
     applied when performin weighted model integration"""
@@ -24,11 +27,16 @@ class TheoryXSDD:
         """
         Builds an XSDD for phi. This module was only used in early development and its use
         is not recommended. It is not maintained and may be removed in future versions
-        
+
         Args:
             phi (FNode): a pysmt formula
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
+        warnings.warn(
+            """The XSDD module is not maintained and may be removed in future versions""",
+            DeprecationWarning,
+        )
+
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("XSDD") is None:
