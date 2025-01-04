@@ -14,7 +14,7 @@ def extract(
     verbose: bool = False,
     use_boolean_mapping: bool = True,
     computation_logger: Dict = None,
-) -> Tuple[int, List[FNode], Dict | None]:
+) -> Tuple[bool, List[FNode], Dict | None]:
     """extract lemmas from a SMT-formula
 
     Args:
@@ -39,10 +39,11 @@ def extract(
         elapsed_time = time.time() - start_time
         if verbose:
             print("Computed All Sat in ", elapsed_time, " seconds")
-            print("Phi is UNSAT")
+            print("Phi is T-UNSAT")
         computation_logger["All-SMT computation time"] = elapsed_time
         computation_logger["All-SMT result"] = "UNSAT"
         lemmas = smt_solver.get_theory_lemmas()
+        computation_logger["T-lemmas amount"] = len(lemmas)
         return UNSAT, lemmas, boolean_mapping
     elapsed_time = time.time() - start_time
     if verbose:
