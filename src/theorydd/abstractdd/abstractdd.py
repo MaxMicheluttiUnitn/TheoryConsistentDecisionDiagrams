@@ -1,8 +1,9 @@
 """interface for Abstract DDs"""
 
 from abc import ABC, abstractmethod
+import logging
 import time
-from typing import Dict, List
+from typing import Dict
 
 from pysmt.fnode import FNode
 
@@ -17,23 +18,21 @@ class AbstractDD(ABC):
     """
 
     def __init__(self):
-        pass
+        self.logger = logging.getLogger("thoerydd_abstractdd")
 
     def _compute_mapping(
-        self, phi: FNode, verbose: bool, computation_logger: dict
+        self, phi: FNode, computation_logger: dict
     ) -> Dict[FNode, str]:
         """computes the mapping"""
         start_time = time.time()
-        if verbose:
-            print("Creating mapping...")
+        self.logger.info("Creating mapping...")
         atoms = get_atoms(phi)
         string_generator = SequentialStringGenerator()
         mapping = {}
         for atom in atoms:
             mapping[atom] = string_generator.next_string()
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Mapping created in ", elapsed_time, " seconds")
+        self.logger.info("Mapping created in %s seconds", str(elapsed_time))
         computation_logger["variable mapping creation time"] = elapsed_time
         return mapping
 

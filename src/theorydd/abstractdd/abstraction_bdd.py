@@ -1,5 +1,6 @@
 """abstraction BDD module"""
 
+import logging
 import time
 import os
 from typing import Dict, List
@@ -33,7 +34,6 @@ class AbstractionBDD(AbstractDD):
         phi: FNode,
         solver: str | SMTEnumerator = "total",
         computation_logger: Dict = None,
-        verbose: bool = False,
         folder_name: str | None = None,
     ):
         """
@@ -43,12 +43,12 @@ class AbstractionBDD(AbstractDD):
             phi (FNode): a pysmt formula
             solver (str | SMTEnumerator) ["total"]: used for T-atoms normalization, can be set to total, 
                 partial or extended_partial or a SMTEnumerator can be provided
-            verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
             folder_name (str | None) [None]: the path to a folder where data to load the AbstractionBDD is stored.
                 If this is not None, then all other parameters are ignored
         """
         super().__init__()
+        self.logger = logging.getLogger("theorydd_abstraction_bdd")
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return
@@ -57,29 +57,26 @@ class AbstractionBDD(AbstractDD):
         if computation_logger.get("Abstraction BDD") is None:
             computation_logger["Abstraction BDD"] = {}
         start_time = time.time()
-        if verbose:
-            print("Normalizing phi according to solver...")
+        self.logger.info("Normalizing phi according to solver...")
         if isinstance(solver, str):
             smt_solver = _get_solver(solver)
         else:
             smt_solver = solver
         phi = formula.get_normalized(phi, smt_solver.get_converter())
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Phi was normalized in ", elapsed_time, " seconds")
+        self.logger.info("Phi was normalized in %s seconds", str(elapsed_time))
         computation_logger["Abstraction BDD"]["phi normalization time"] = elapsed_time
 
         # CREATING VARIABLE MAPPING
-        self.mapping = self._compute_mapping(phi, verbose, computation_logger["Abstraction BDD"])
+        self.mapping = self._compute_mapping(phi, computation_logger["Abstraction BDD"])
 
         # BUILDING ACTUAL BDD
-        self._build(phi, verbose, computation_logger["Abstraction BDD"])
+        self._build(phi, computation_logger["Abstraction BDD"])
 
-    def _build(self, phi:FNode, verbose: bool, computation_logger: Dict):
+    def _build(self, phi:FNode, computation_logger: Dict):
         """builds the DD"""
         start_time = time.time()
-        if verbose:
-            print("Building Abstraction BDD...")
+        self.logger.info("Building Abstraction BDD...")
         self.bdd = cudd_bdd.BDD()
         all_values = list(self.mapping.values())
         self.bdd.declare(*all_values)
@@ -90,8 +87,7 @@ class AbstractionBDD(AbstractDD):
         walker = BDDWalker(self.mapping, self.bdd)
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Abstraction BDD for phi built in ", elapsed_time, " seconds")
+        self.logger.info("Abstraction BDD for phi built in %s seconds", str(elapsed_time))
         computation_logger["DD building time"] = elapsed_time
 
     def __len__(self) -> int:

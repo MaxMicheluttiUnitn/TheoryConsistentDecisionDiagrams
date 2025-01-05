@@ -1,5 +1,6 @@
 """module to handle LDDs"""
 
+import logging
 import time
 from typing import Any, Dict
 
@@ -32,7 +33,6 @@ class LDD:
         self,
         phi: FNode,
         theory: str,
-        verbose: bool = False,
         computation_logger: Dict = None,
     ):
         """Builds a LDD for phi
@@ -40,9 +40,10 @@ class LDD:
         Args:
             phi (FNode): a pysmt T-formula of the specified theory
             theory (str): the theory of the T-atoms of phi
-            verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
+        self.logger = logging.getLogger("theorydd_ldd")
+
         if computation_logger is None:
             computation_logger = {}
         if computation_logger.get("LDD") is None:
@@ -64,7 +65,7 @@ class LDD:
 
         # FINDING VARS
         start_time = time.time()
-        print("Finding symbols...")
+        self.logger.info("Finding symbols...")
         symbols = _formula.get_symbols(phi)
         self.total_atoms = len(_formula.get_atoms(phi))
         boolean_symbols: dict[FNode, str] = {}
@@ -83,25 +84,22 @@ class LDD:
             else:
                 raise UnsupportedSymbolException(str(s))
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Symbols found in ", elapsed_time, " seconds")
+        self.logger.info("Symbols found in %s seconds", str(elapsed_time))
 
         # BUILDING LDD
-        self._build(phi, boolean_symbols, integer_symbols, ldd_theory, verbose, computation_logger["LDD"])
+        self._build(phi, boolean_symbols, integer_symbols, ldd_theory, computation_logger["LDD"])
 
-    def _build(self, phi: FNode, boolean_symbols: dict, integer_symbols: dict, theory, verbose: bool, computation_logger: Dict):
+    def _build(self, phi: FNode, boolean_symbols: dict, integer_symbols: dict, theory, computation_logger: Dict):
         # LDD(Id theory,#int vars,#bool vars)
         start_time = time.time()
-        if verbose:
-            print("Building LDD...")
+        self.logger.info("Building LDD...")
         self.manager = _ldd.LDD(
             theory, len(integer_symbols.keys()), len(boolean_symbols.keys())
         )
         walker = LDDWalker(boolean_symbols, integer_symbols, self.manager)
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("LDD for phi built in ", elapsed_time, " seconds")
+        self.logger.info("LDD for phi built in %s seconds", str(elapsed_time))
         computation_logger["DD building time"] = elapsed_time
 
     def __len__(self) -> int:

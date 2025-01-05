@@ -1,5 +1,6 @@
 """abstraction SDD module"""
 
+import logging
 import os
 import time
 from typing import Dict, List, Set
@@ -36,7 +37,6 @@ class AbstractionSDD(AbstractDD):
         phi: FNode,
         solver: str | SMTEnumerator = "total",
         vtree_type: str = "balanced",
-        verbose: bool = False,
         computation_logger: Dict = None,
         folder_name: str | None = None,
     ):
@@ -48,12 +48,12 @@ class AbstractionSDD(AbstractDD):
             solver (str | SMTEnumerator) ["total"]: used for T-atoms normalization, can be set to "total", "partial" or "extended_partial"
                 or a SMTEnumerator instance can be provided
             vtree_type (str) ["balanced"]: used for Vtree generation. Available values in theorydd.constants.VALID_VTREE
-            verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
             folder_name (str | None) [None]: the path to a folder where data to load the AbstractionSDD is stored.
                 If this is not None, then all other parameters are ignored
         """
         super().__init__()
+        self.logger = logging.getLogger("theorydd_abstraction_sdd")
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return
@@ -62,8 +62,7 @@ class AbstractionSDD(AbstractDD):
         if computation_logger.get("Abstraction SDD") is None:
             computation_logger["Abstraction SDD"] = {}
         start_time = time.time()
-        if verbose:
-            print("Normalizing phi according to solver...")
+        self.logger.info("Normalizing phi according to solver...")
         # THE SOLVER IS ONLY USED FOR ATOM NORMALIZATION
         if isinstance(solver, str):
             smt_solver = _get_solver(solver)
@@ -71,57 +70,51 @@ class AbstractionSDD(AbstractDD):
             smt_solver = solver
         phi = formula.get_normalized(phi, smt_solver.get_converter())
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Phi was normalized in ", elapsed_time, " seconds")
+        self.logger.info("Phi was normalized in %s seconds", str(elapsed_time))
         computation_logger["Abstraction SDD"]["phi normalization time"] = elapsed_time
 
         # CREATING VARIABLE MAPPING
         self.mapping = self._compute_mapping(
-            phi, verbose, computation_logger["Abstraction SDD"]
+            phi, computation_logger["Abstraction SDD"]
         )
 
         # BUILDING V-TREE
         atoms = get_atoms(phi)
         self.vtree = self._build_vtree(
-            vtree_type, atoms, verbose, computation_logger["Abstraction SDD"]
+            vtree_type, atoms, computation_logger["Abstraction SDD"]
         )
 
         # BUILDING SDD WITH WALKER
-        self._build(phi, atoms, verbose, computation_logger["Abstraction SDD"])
+        self._build(phi, atoms, computation_logger["Abstraction SDD"])
 
     def _build(
-        self, phi: FNode, atoms: List[FNode], verbose: bool, computation_logger: Dict
+        self, phi: FNode, atoms: List[FNode], computation_logger: Dict
     ) -> None:
         """builds the DD"""
         start_time = time.time()
-        if verbose:
-            print("Building Abstraction SDD...")
+        self.logger.info("Building Abstraction SDD...")
         self.manager = SddManager.from_vtree(self.vtree)
         sdd_literals = [self.manager.literal(i) for i in range(1, len(atoms) + 1)]
         atom_literal_map = dict(zip(atoms, sdd_literals))
         walker = SDDWalker(atom_literal_map, self.manager)
         self.root = walker.walk(phi)
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Abstraction SDD built in ", elapsed_time, " seconds")
+        self.logger.info("Abstraction SDD built in %s seconds", str(elapsed_time))
         computation_logger["DD building time"] = elapsed_time
 
     def _build_vtree(
         self,
         vtree_type: str,
         atoms: List[FNode],
-        verbose: bool,
         computation_logger: Dict,
     ) -> Vtree:
         start_time = time.time()
-        if verbose:
-            print("Building V-Tree...")
+        self.logger.info("Building V-Tree...")
         self.name_to_atom_map = {v: k for k, v in self.mapping.items()}
         var_order = list(range(1, len(atoms) + 1))
         vtree = Vtree(len(atoms), var_order, vtree_type)
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("V-Tree built in ", elapsed_time, " seconds")
+        self.logger.info("V-Tree built in %s seconds", str(elapsed_time))
         computation_logger["V-Tree building time"] = elapsed_time
         return vtree
 
