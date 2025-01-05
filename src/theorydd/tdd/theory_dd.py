@@ -1,6 +1,7 @@
 """interface for the theory DD classes"""
 
 from abc import ABC, abstractmethod
+import logging
 import time
 from typing import Dict, List, Tuple
 
@@ -23,37 +24,33 @@ class TheoryDD(ABC):
     def __init__(self):
         self.mapping = {}
         self.qvars = []
-        pass
+        self.logger = logging.getLogger("thoerydd_tdd")
 
     def _compute_mapping(
-        self, atoms: List[FNode], verbose: bool, computation_logger: dict
+        self, atoms: List[FNode], computation_logger: dict
     ) -> Dict[FNode, str]:
         """computes the mapping"""
         start_time = time.time()
-        if verbose:
-            print("Creating mapping...")
+        self.logger.info("Creating mapping...")
         mapping = {}
 
         string_generator = SequentialStringGenerator()
         for atom in atoms:
             mapping[atom] = string_generator.next_string()
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Mapping created in ", elapsed_time, " seconds")
+        self.logger.info("Mapping created in %s seconds", str(elapsed_time))
         computation_logger["variable mapping creation time"] = elapsed_time
         return mapping
 
     def _normalize_input(
-        self, phi: FNode, solver: SMTEnumerator, verbose: str, computation_logger: Dict
+        self, phi: FNode, solver: SMTEnumerator, computation_logger: Dict
     ) -> FNode:
         """normalizes the input"""
         start_time = time.time()
-        if verbose:
-            print("Normalizing phi according to solver...")
+        self.logger.info("Normalizing phi according to solver...")
         phi = formula.get_normalized(phi, solver.get_converter())
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Phi was normalized in ", elapsed_time, " seconds")
+        self.logger.info("Phi was normalized in %s seconds",str(elapsed_time))
         computation_logger["phi normalization time"] = elapsed_time
         return phi
 
@@ -64,14 +61,12 @@ class TheoryDD(ABC):
         tlemmas: List[FNode] | None,
         load_lemmas: str | None,
         sat_result: bool,
-        verbose: bool,
         computation_logger: Dict,
     ) -> Tuple[List[FNode], bool]:
         """loads the lemmas"""
         # LOADING LEMMAS
         start_time = time.time()
-        if verbose:
-            print("Loading Lemmas...")
+        self.logger.info("Loading Lemmas...")
         if tlemmas is not None:
             computation_logger["ALL SMT mode"] = "loaded"
         elif load_lemmas is not None:
@@ -82,7 +77,6 @@ class TheoryDD(ABC):
             sat_result, tlemmas, _bm = extract(
                 phi,
                 smt_solver,
-                verbose=verbose,
                 computation_logger=computation_logger,
             )
         tlemmas = list(
@@ -94,24 +88,21 @@ class TheoryDD(ABC):
         while len(tlemmas) < 2:
             tlemmas.append(formula.top())
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("Lemmas loaded in ", elapsed_time, " seconds")
+        self.logger.info("Lemmas loaded in %s seconds", str(elapsed_time))
         computation_logger["lemmas loading time"] = elapsed_time
         return tlemmas, sat_result
 
     def _build_unsat(
-        self, walker: BDDWalker | SDDWalker, verbose: bool, computation_logger: Dict
+        self, walker: BDDWalker | SDDWalker, computation_logger: Dict
     ) -> object:
         """builds the T-DD for an UNSAT formula
 
         Returns the root of the DD"""
         start_time = time.time()
-        if verbose:
-            print("Building T-DD for UNSAT formula...")
+        self.logger.info("Building T-DD for UNSAT formula...")
         root = walker.walk(formula.bottom())
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("T-DD for UNSAT formula built in ", elapsed_time, " seconds")
+        self.logger.info("T-DD for UNSAT formula built in %s seconds", str(elapsed_time))
         computation_logger["UNSAT DD building time"] = elapsed_time
         return root
 
@@ -120,43 +111,34 @@ class TheoryDD(ABC):
         phi: FNode,
         tlemmas: List[FNode],
         walker: BDDWalker,
-        verbose: bool,
         computation_logger: Dict,
     ) -> None:
         """Builds the T-DD"""
         # DD for phi
         start_time = time.time()
-        if verbose:
-            print("Building DD for phi...")
+        self.logger.info("Building DD for phi...")
         phi_bdd = walker.walk(phi)
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("DD for phi built in ", elapsed_time, " seconds")
+        self.logger.info("DD for phi built in %s seconds", str(elapsed_time))
         computation_logger["phi DD building time"] = elapsed_time
 
         # DD for t-lemmas
         start_time = time.time()
-        if verbose:
-            print("Building T-DD for big and of t-lemmas...")
+        self.logger.info("Building T-DD for big and of t-lemmas...")
         tlemmas_dd = walker.walk(formula.big_and(tlemmas))
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("DD for T-lemmas built in ", elapsed_time, " seconds")
+        self.logger.info("DD for T-lemmas built in %s seconds", str(elapsed_time))
         computation_logger["t-lemmas DD building time"] = elapsed_time
 
         # ENUMERATING OVER FRESH T-ATOMS
         mapped_qvars = [self.mapping[atom] for atom in self.qvars]
         if len(mapped_qvars) > 0:
             start_time = time.time()
-            if verbose:
-                print("Enumerating over fresh T-atoms...")
+            self.logger.info("Enumerating over fresh T-atoms...")
             tlemmas_dd = self._enumerate_qvars(tlemmas_dd, mapped_qvars)
             elapsed_time = time.time() - start_time
-            if verbose:
-                print(
-                    "fresh T-atoms quantification completed in ",
-                    elapsed_time,
-                    " seconds",
+            self.logger.info(
+                    "fresh T-atoms quantification completed in %s seconds", str(elapsed_time)
                 )
             computation_logger["fresh T-atoms quantification time"] = elapsed_time
         else:
@@ -164,12 +146,10 @@ class TheoryDD(ABC):
 
         # JOINING PHI BDD AND TLEMMAS BDD
         start_time = time.time()
-        if verbose:
-            print("Joining phi DD and lemmas T-DD...")
+        self.logger.info("Joining phi DD and lemmas T-DD...")
         root = phi_bdd & tlemmas_dd
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("T-DD for phi and t-lemmas joint in ", elapsed_time, " seconds")
+        self.logger.info("T-DD for phi and t-lemmas joint in %s seconds", str(elapsed_time))
         computation_logger["DD joining time"] = elapsed_time
         return root
 

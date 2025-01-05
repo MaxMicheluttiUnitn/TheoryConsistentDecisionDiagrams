@@ -3,6 +3,7 @@
 import json
 import time
 import os
+import logging
 from typing import Dict, List
 from pysmt.fnode import FNode
 import pydot
@@ -33,6 +34,7 @@ class TheoryBDD(TheoryDD):
     root: cudd_bdd.Function
     qvars: List[FNode]
     mapping: Dict[FNode, object]
+    logger: logging.Logger
 
     def __init__(
         self,
@@ -42,7 +44,6 @@ class TheoryBDD(TheoryDD):
         tlemmas: List[FNode] = None,
         sat_result: bool | None = None,
         computation_logger: Dict = None,
-        verbose: bool = False,
         folder_name: str | None = None,
     ) -> None:
         """Builds a T-BDD. The construction requires the
@@ -59,12 +60,12 @@ class TheoryBDD(TheoryDD):
             tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
             sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
-            verbose (bool) [False]: set it to True to log computation on stdout
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info.
             folder_name (str | None) [None]: the path to a folder where data to load the T-BDD is stored.
                 If this is not None, then all other parameters are ignored
         """
         super().__init__()
+        self.logger = logging.getLogger("theorydd_bdd")
         if folder_name is not None:
             self._load_from_folder(folder_name)
             return
@@ -79,7 +80,7 @@ class TheoryBDD(TheoryDD):
         else:
             smt_solver = solver
         phi = self._normalize_input(
-            phi, smt_solver, verbose, computation_logger["T-BDD"]
+            phi, smt_solver, computation_logger["T-BDD"]
         )
 
         # LOAD LEMMAS
@@ -89,7 +90,6 @@ class TheoryBDD(TheoryDD):
             tlemmas,
             load_lemmas,
             sat_result,
-            verbose,
             computation_logger["T-BDD"],
         )
 
@@ -100,7 +100,6 @@ class TheoryBDD(TheoryDD):
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
-            verbose=verbose,
             computation_logger=computation_logger["T-BDD"],
         )
 
@@ -108,13 +107,12 @@ class TheoryBDD(TheoryDD):
 
         # CREATING VARIABLE MAPPING
         self.mapping = self._compute_mapping(
-            atoms, verbose, computation_logger["T-BDD"]
+            atoms, computation_logger["T-BDD"]
         )
 
         # PREPARE FOR BUILDING
         start_time = time.time()
-        if verbose:
-            print("starting T-BDD preparation phase...")
+        self.logger.info("starting T-BDD preparation phase...")
         self.bdd = cudd_bdd.BDD()
         appended_values = set()
         all_values = [self.mapping[atom] for atom in self.qvars]
@@ -130,14 +128,13 @@ class TheoryBDD(TheoryDD):
         cudd_bdd.reorder(self.bdd, bdd_ordering)
         walker = BDDWalker(self.mapping, self.bdd)
         elapsed_time = time.time() - start_time
-        if verbose:
-            print("BDD preparation phase completed in ", elapsed_time, " seconds")
+        self.logger.info("BDD preparation phase completed in %s seconds", str(elapsed_time))
         computation_logger["T-BDD"]["DD preparation time"] = elapsed_time
 
         if sat_result is None or sat_result == SAT:
-            self.root = self._build(phi,tlemmas,walker,verbose,computation_logger["T-BDD"])
+            self.root = self._build(phi,tlemmas,walker,computation_logger["T-BDD"])
         else:
-            self.root = self._build_unsat(walker,verbose,computation_logger["T-BDD"])
+            self.root = self._build_unsat(walker,computation_logger["T-BDD"])
 
     def _enumerate_qvars(self, tlemmas_dd: object, mapped_qvars: List[object]) -> object:
         return cudd_bdd.and_exists(tlemmas_dd, self.bdd.true, mapped_qvars)
@@ -176,6 +173,7 @@ class TheoryBDD(TheoryDD):
         """
         temporary_dot = "bdd_temporary_dot.dot"
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
+        # TODO! REMOVE THIS IN ALL CLASSES THAT INHERIT FROM THEORYDD
         if print_mapping:
             print("Mapping:")
             print(reverse_mapping)
