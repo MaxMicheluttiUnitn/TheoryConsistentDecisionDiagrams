@@ -153,7 +153,13 @@ class TheoryBDD(TheoryDD):
 
     def count_models(self) -> int:
         """returns the amount of models in the T-BDD"""
-        return self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
+        try:
+            total = self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
+        except RuntimeError:
+            # sometimes CUDD throws a RuntimeError when counting models
+            # when it runs out of memory
+            total = -1
+        return total
 
     def graphic_dump(
         self,

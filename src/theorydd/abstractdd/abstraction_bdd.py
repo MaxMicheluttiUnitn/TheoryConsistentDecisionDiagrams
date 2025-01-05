@@ -103,7 +103,11 @@ class AbstractionBDD(AbstractDD):
 
     def count_models(self) -> int:
         """Returns the amount of models in the Abstraction-BDD"""
-        return self.root.count(nvars=len(self.mapping.keys()))
+        try:
+            total = self.root.count(nvars=len(self.mapping.keys()))
+        except RuntimeError:
+            total = -1
+        return total
 
     def graphic_dump(
         self,
