@@ -158,25 +158,18 @@ class TheoryBDD(TheoryDD):
     def graphic_dump(
         self,
         output_file: str,
-        print_mapping: bool = False,
         dump_abstraction: bool = False,
     ) -> None:
         """Save the T-SDD on a file with Graphviz
 
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping
-                between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
                 full names of atoms
         """
         temporary_dot = "bdd_temporary_dot.dot"
         reverse_mapping = dict((v, k) for k, v in self.mapping.items())
-        # TODO! REMOVE THIS IN ALL CLASSES THAT INHERIT FROM THEORYDD
-        if print_mapping:
-            print("Mapping:")
-            print(reverse_mapping)
         if output_file.endswith(".dot"):
             self.bdd.dump(output_file, filetype="dot", roots=[self.root])
             if not dump_abstraction:
@@ -190,7 +183,7 @@ class TheoryBDD(TheoryDD):
                 graph.write_svg(output_file)
             os.remove(temporary_dot)
         else:
-            print("Unable to dump T-BDD file: format not unsupported")
+            self.logger.info("Unable to dump T-BDD file: format not unsupported")
             return
 
     def get_mapping(self) -> Dict:

@@ -157,7 +157,6 @@ class TheorySDD(TheoryDD):
         start_time = time.time()
         self.logger.info("Building V-Tree...")
         self.name_to_atom_map = {k: v for k, v in self.mapping.items()}
-        # print(name_to_atom_map)
         # for now just use appearance order in phi
         var_count = len(atoms)
         var_order = list(range(1, var_count + 1))
@@ -205,34 +204,27 @@ class TheorySDD(TheoryDD):
     def graphic_dump(
         self,
         output_file: str,
-        print_mapping: bool = False,
         dump_abstraction: bool = False,
     ) -> None:
         """Save the T-SDD on a file with Graphviz
 
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping
-                between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
                 full names of atoms
         """
         start_time = time.time()
-        print("Saving SDD...")
-        if print_mapping:
-            print("Mapping:")
-            print(self.name_to_atom_map)
+        self.logger.info("Saving SDD...")
         if _save_sdd_object(
             self.root, output_file, self.name_to_atom_map, "SDD", dump_abstraction
         ):
             elapsed_time = time.time() - start_time
-            print("SDD saved as " + output_file + " in ", elapsed_time, " seconds")
+            self.logger.info("SDD saved as %s in %s seconds", output_file, str(elapsed_time))
         else:
-            print(
-                "SDD could not be saved: The file format of ",
-                output_file,
-                " is not supported",
+            self.logger.info(
+                "SDD could not be saved: The file format of %s is not supported",
+                output_file
             )
 
     def graphic_dump_vtree(self, output_file: str) -> None:
@@ -244,10 +236,9 @@ class TheorySDD(TheoryDD):
         if not _save_sdd_object(
             self.vtree, output_file, self.name_to_atom_map, "VTree"
         ):
-            print(
-                "V-Tree could not be saved: The file format of ",
-                output_file,
-                " is not supported",
+            self.logger.info(
+                "V-Tree could not be saved: The file format of %s is not supported",
+                output_file
             )
 
     def get_mapping(self) -> Dict:

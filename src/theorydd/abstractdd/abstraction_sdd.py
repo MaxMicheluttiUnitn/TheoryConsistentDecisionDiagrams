@@ -28,8 +28,8 @@ class AbstractionSDD(AbstractDD):
 
     SDD: SddManager
     root: SddNode
-    mapping: Dict
-    name_to_atom_map: Dict  # NEEDED FOR SERIALIZATION
+    abstraction: Dict
+    refinement: Dict  # NEEDED FOR SERIALIZATION
     vtree: Vtree
 
     def __init__(
@@ -74,7 +74,7 @@ class AbstractionSDD(AbstractDD):
         computation_logger["Abstraction SDD"]["phi normalization time"] = elapsed_time
 
         # CREATING VARIABLE MAPPING
-        self.mapping = self._compute_mapping(
+        self.abstraction = self._compute_mapping(
             phi, computation_logger["Abstraction SDD"]
         )
 
@@ -110,7 +110,7 @@ class AbstractionSDD(AbstractDD):
     ) -> Vtree:
         start_time = time.time()
         self.logger.info("Building V-Tree...")
-        self.name_to_atom_map = {v: k for k, v in self.mapping.items()}
+        self.refinement = {v: k for k, v in self.abstraction.items()}
         var_order = list(range(1, len(atoms) + 1))
         vtree = Vtree(len(atoms), var_order, vtree_type)
         elapsed_time = time.time() - start_time
@@ -156,34 +156,27 @@ class AbstractionSDD(AbstractDD):
 
     def get_mapping(self) -> Dict[FNode, str]:
         """returns the mapping"""
-        return self.mapping
+        return self.abstraction
 
     def graphic_dump(
         self,
         output_file: str,
-        print_mapping: bool = False,
         dump_abstraction: bool = False,
     ) -> None:
         """Save the AbstractionSDD on a file with Graphviz
 
         Args:
             output_file (str): the path to the output file
-            print_mapping (bool) [False]: set it to True to print the mapping
-                between the names of the atoms in the DD and the original atoms
             dump_abstraction (bool) [False]: set it to True to dump a DD
                 with the names of the abstraction of the atoms instead of the
                 full names of atoms
         """
-        if print_mapping:
-            print("Mapping:")
-            print(self.name_to_atom_map)
         if not _save_sdd_object(
-            self.root, output_file, self.name_to_atom_map, "SDD", dump_abstraction
+            self.root, output_file, self.refinement, "SDD", dump_abstraction
         ):
-            print(
-                "SDD could not be saved: The file format of ",
-                output_file,
-                " is not supported",
+            self.logger.info(
+                "SDD could not be saved: The file format of %s is not supported",
+                output_file
             )
 
     def graphic_dump_vtree(self, output_file: str) -> None:
@@ -193,12 +186,11 @@ class AbstractionSDD(AbstractDD):
             output_file (str): the path to the output file
         """
         if not _save_sdd_object(
-            self.vtree, output_file, self.name_to_atom_map, "VTree"
+            self.vtree, output_file, self.refinement, "VTree"
         ):
-            print(
-                "V-Tree could not be saved: The file format of ",
-                output_file,
-                " is not supported",
+            self.logger.info(
+                "V-Tree could not be saved: The file format of %s is not supported",
+                output_file
             )
 
     def save_to_folder(self, folder_path: str) -> None:
@@ -214,7 +206,7 @@ class AbstractionSDD(AbstractDD):
         self.save_vtree_to_folder(folder_path)
         # save mapping
         formula.save_abstraction_function(
-            self.mapping, folder_path + "/abstraction.json"
+            self.abstraction, folder_path + "/abstraction.json"
         )
         # save sdd
         self.root.save(str.encode(folder_path + "/sdd.sdd"))
@@ -243,10 +235,10 @@ class AbstractionSDD(AbstractDD):
         self.vtree = _vtree_load_from_folder(folder_path)
         self.manager = SddManager.from_vtree(self.vtree)
         self.root = self.manager.read_sdd_file(str.encode(f"{folder_path}/sdd.sdd"))
-        self.mapping = formula.load_abstraction_function(
+        self.abstraction = formula.load_abstraction_function(
             folder_path + "/abstraction.json"
         )
-        self.name_to_atom_map = {v: k for k, v in self.mapping.items()}
+        self.refinement = {v: k for k, v in self.abstraction.items()}
 
 
 def abstraction_sdd_load_from_folder(folder_path: str) -> AbstractionSDD:
