@@ -36,16 +36,10 @@ def default_phi() -> FNode:
     Returns:
         FNode: the default formula
     """
-    x1, x2, x3, x4, a = (
+    x1, x2 = (
         _Symbol("x1", _REAL),
         _Symbol("x2", _REAL),
-        _Symbol("x3", _REAL),
-        _Symbol("x4", _REAL),
-        _Symbol("a", _BOOL),
     )
-    left_xor = _Or(x1 > x2, x2 > x1)
-    right_xor = _Or(x3 > x4, x4 > x3)
-    phi = _And(left_xor, right_xor, _Xor(x1 > x4, x4 > x1), a)
 
     # phi = [(x>0) ∧ (x<1)] ∧ [(y<1) ∨ ((x>y) ∧ (y>1/2))]
     phi = _And(
