@@ -157,6 +157,20 @@ class TabularSMTSolver(SMTEnumerator):
         return [self._converter.convert(a) for a in atoms]
 
 
+class TabularTotalSMTSolver(TabularSMTSolver):
+    """A wrapper for the tabular the TabularSMTSOlver 
+    that always computyes total enumeration"""
+
+    def __init__(self) -> None:
+        super().__init__(is_partial=False)
+
+class TabularPartialSMTSolver(TabularSMTSolver):
+    """A wrapper for the tabular the TabularSMTSOlver 
+    that always computes partial enumeration"""
+
+    def __init__(self) -> None:
+        super().__init__(is_partial=True)
+
 def _clear_tlemmas():
     for item in os.listdir():
         if re.search(_TLEMMAS_FILE_REGEX, item):

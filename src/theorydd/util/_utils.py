@@ -8,6 +8,7 @@ from theorydd.solvers.solver import SMTEnumerator
 from theorydd.solvers.mathsat_partial import MathSATPartialEnumerator
 from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
 from theorydd.solvers.mathsat_partial_extended import MathSATExtendedPartialEnumerator
+from theorydd.solvers.tabular import TabularSMTSolver
 from theorydd.util.custom_exceptions import InvalidSolverException
 
 
@@ -93,10 +94,17 @@ def get_solver(solver_name: str) -> SMTEnumerator:
     Returns:
         SMTEnumerator: a SMTEnumerator object
     """
+    if not is_valid_solver(solver_name):
+        raise InvalidSolverException(f"Invalid solver {solver_name}")
     if solver_name == "total":
         return MathSATTotalEnumerator()
     if solver_name == "partial":
         return MathSATPartialEnumerator()
     if solver_name == "extended_partial":
         return MathSATExtendedPartialEnumerator()
-    raise InvalidSolverException(f"Invalid solver {solver_name}")
+    if solver_name == "tabular_total":
+        return TabularSMTSolver(is_partial=False)
+    if solver_name == "tabular_partial":
+        return TabularSMTSolver(is_partial=True)
+    # this should never happen
+    raise InvalidSolverException(f"Unexpected error!!! Invalid solver {solver_name}")
