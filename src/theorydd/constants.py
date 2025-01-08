@@ -1,5 +1,8 @@
 """constants for theorydd"""
 
+import os
+import re
+
 # VALID ITEMS
 
 VALID_VTREE = ["left", "right", "balanced", "vertical", "random"]
@@ -44,3 +47,21 @@ SDD_KEY_START_RIGHT_REGEX = r'([A-Z]+|[0-9]+)",'
 SDD_KEY_END_RIGHT_REGEX = r'",'
 SDD_REPLACE_LEFT_REGEX = SDD_KEY_START_LEFT_REGEX
 SDD_REPLACE_RIGHT_REGEX = SDD_KEY_START_RIGHT_REGEX
+
+LIBRARY_PATH = os.path.dirname(os.path.realpath(__file__))
+
+C2D_COMMAND = "." + LIBRARY_PATH + "/bin/c2d/c2d_linux"
+D4_COMMAND = "." + LIBRARY_PATH + "/bin/d4/d4.bin"
+TABULAR_ALLSMT_COMMAND = "." + LIBRARY_PATH + "/bin/tabular/tabularAllSMT.bin"
+
+# regex for tlemmas files
+TLEMMAS_FILE_REGEX = "tlemma_[0-9]+.smt2"
+
+# D4 NODES
+D4_AND_NODE = 0
+D4_OR_NODE = 1
+D4_TRUE_NODE = 2
+D4_FALSE_NODE = 3
+
+# D4 REGEX
+RE_NNF_EDGE = re.compile(r"(\d+) (\d+)( .+)? 0")

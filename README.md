@@ -38,8 +38,41 @@ To check that everything is installed correctly type:
 
 If you only see a imp warning, but no error message is displayed, everything should be installed correctly.
 
+## Running Tabular AllSMT and the dDNNF compilers
 
-## Dumping T-BDDs and Abstraction-BDDs on dot files
+This package supports both AllSMT solving through the Tabular AllSMT compiler and dDNNF compiling with c2d and d4.<br>
+These components are not automatically installed with this package when pip is invoked.<br>
+Instead a new command "theorydd_install" is installed on your machine which runs theorydd.install_bin.run_setup.<br>
+To install all the components mentioned in this paragraph on your machine, run:
+
+```
+    theorydd_install --c2d --d4 --tabular
+```
+
+The options in the provided example are not required: you can install each component separately through the options of theorydd_install.
+
+### Installing Manually
+
+If you already own the binary for one of the compilers, you can copy
+in the correct folder with the correct name as in the example below:
+
+```
+-theorydd
+ |-abstractdd
+ | L...
+ |-bin
+ | |-c2d
+ | | L-c2d_linux
+ | |-d4
+ | | L-d4.bin
+ | |-tabular
+ | L L-tabularAllSMT.bin
+ |-solvers
+ | L...
+ L ...
+```
+
+<!-- ## Dumping T-BDDs and Abstraction-BDDs on dot files
 
 The dump BDDs on .dot files change the dd library code as follows:
 
@@ -90,7 +123,7 @@ def dump(self, filename, roots=None,
             raise Exception(
                 'Unknown file type of "{f}"'.format(
                     f=filename))
-```
+``` -->
 
 License
 -------

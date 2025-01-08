@@ -33,6 +33,11 @@ def default_phi() -> FNode:
     """Returns a default SMT formula's root FNode:
     [(x>0) ∧ (x<1)] ∧ [(y<1) ∨ ((x>y) ∧ (y>1/2))]
 
+    This formula is only an example that can be used
+    to test correct installation of the package
+    or to generate simple example outputs
+    showcasing what the package can do
+
     Returns:
         FNode: the default formula
     """

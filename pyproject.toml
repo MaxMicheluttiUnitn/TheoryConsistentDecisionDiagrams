@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "theorydd"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="Massimo Michelutti", email="massimo.michelutti@studenti.unitn.it" },
 ]
@@ -23,11 +23,16 @@ dependencies = [
     "PySMT==0.9.6.dev53",
     "dd @ git+https://github.com/masinag/dd.git#egg=main",
     "allsat_cnf @ git+https://github.com/masinag/allsat-cnf@main",
+    "GitPython>=3.1.44"
 ]
 
 [project.urls]
 Homepage = "https://github.com/pypa/sampleproject"
 Issues = "https://github.com/pypa/sampleproject/issues"
+
+
+[project.scripts]
+theorydd_install = "theorydd:install_bin.run_setup"
 
 [tool.pytest.ini_options]
 pythonpath = "src"

@@ -126,3 +126,6 @@ dmypy.json
 
 # Testing data
 tests/test_data/*
+
+# Binaries folder
+src/theorydd/bin/
