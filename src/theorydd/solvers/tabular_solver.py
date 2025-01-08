@@ -39,6 +39,7 @@ class TabularSMTSolver(SMTEnumerator):
             raise PermissionError(
                 "The binary for the tabular AllSMT solver is not executable. Please check the permissions and grant execution rights."
             )
+        super().__init__()
         self.normalizer_solver = _Enumerator()
         self._tlemmas = []
         self._models = []

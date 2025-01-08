@@ -20,6 +20,7 @@ class MathSATTotalEnumerator(SMTEnumerator):
     """A wrapper for the mathsat T-solver"""
 
     def __init__(self) -> None:
+        super().__init__()
         solver_options_dict = {
             "dpll.allsat_minimize_model": "false",  # - total truth assignments
             # "theory.pure_literal_filtering": "true",

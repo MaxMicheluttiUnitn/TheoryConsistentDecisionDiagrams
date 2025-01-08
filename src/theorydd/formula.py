@@ -10,7 +10,6 @@ from pysmt.shortcuts import (
     REAL as _REAL,
     And as _And,
     Or as _Or,
-    Xor as _Xor,
     BOOL as _BOOL,
     Real as _Real,
     LT as _LT,

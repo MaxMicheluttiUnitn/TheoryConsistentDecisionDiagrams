@@ -24,6 +24,7 @@ class MathSATPartialEnumerator(SMTEnumerator):
     but some T-inconsistent extension may not be ruled out by the computed T-lemmas."""
 
     def __init__(self) -> None:
+        super().__init__()
         solver_options_dict = {
             "dpll.allsat_minimize_model": "true",  # - partial truth assignments
             # "theory.pure_literal_filtering": "true",
