@@ -42,10 +42,10 @@ class D4Node:
 
     def __init__(self, node_type: int):
         # check if d4 is available and executable
-        if not os.path.isfile(_D4_COMMAND[1:]):
+        if not os.path.isfile(_D4_COMMAND):
             raise FileNotFoundError(
                 "The binary for the d4 compiler is missing. Please run \"theorydd_install --d4\" to install or install manually.")
-        if not os.access(_D4_COMMAND[1:], os.X_OK):
+        if not os.access(_D4_COMMAND, os.X_OK):
             raise PermissionError(
                 "The d4 binary is not executable. Please check the permissions for the file and grant execution rights.")
         super().__init__()

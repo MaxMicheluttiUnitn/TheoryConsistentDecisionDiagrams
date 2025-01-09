@@ -31,11 +31,11 @@ class TabularSMTSolver(SMTEnumerator):
     """
 
     def __init__(self, is_partial: bool = False) -> None:
-        if not os.path.isfile(_TABULAR_ALLSMT_COMMAND[1:]):
+        if not os.path.isfile(_TABULAR_ALLSMT_COMMAND):
             raise FileNotFoundError(
                 'The binary for the tabular AllSMT solver is missing. Please run "theorydd_install --tabular" to install or install manually.'
             )
-        if not os.access(_TABULAR_ALLSMT_COMMAND[1:], os.X_OK):
+        if not os.access(_TABULAR_ALLSMT_COMMAND, os.X_OK):
             raise PermissionError(
                 "The binary for the tabular AllSMT solver is not executable. Please check the permissions and grant execution rights."
             )

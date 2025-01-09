@@ -30,10 +30,10 @@ class C2DCompiler(DDNNFCompiler):
 
     def __init__(self):
         # check if c2d is available and executable
-        if not os.path.isfile(_C2D_COMMAND[1:]):
+        if not os.path.isfile(_C2D_COMMAND):
             raise FileNotFoundError(
                 "The binary for the c2d compiler is missing. Please run \"theorydd_install --c2d\" to install or install manually.")
-        if not os.access(_C2D_COMMAND[1:], os.X_OK):
+        if not os.access(_C2D_COMMAND, os.X_OK):
             raise PermissionError(
                 "The c2d binary is not executable. Please check the permissions for the file and grant execution rights.")
 

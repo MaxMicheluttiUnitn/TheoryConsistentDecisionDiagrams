@@ -134,7 +134,6 @@ def run_setup():
     """Run setup"""
     args = get_args()
     module_path = os.path.dirname(os.path.realpath(__file__))
-    print(module_path)
     binary_path = module_path + "/bin"
     if not os.path.exists(binary_path):
         os.mkdir(binary_path)
