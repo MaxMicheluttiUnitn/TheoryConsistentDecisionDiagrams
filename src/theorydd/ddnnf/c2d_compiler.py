@@ -99,7 +99,7 @@ class C2DCompiler(DDNNFCompiler):
             return
 
         # CONVERTNG IN DIMACS FORMAT AND SAVING ON FILE
-        self.write_dimacs(dimacs_file, phi_cnf, fresh_atoms)
+        self.write_dimacs(dimacs_file, phi_cnf)
 
     def _save_quantification_file(self, quantification_file: str, fresh_atoms: List[FNode]) -> None:
         with open(quantification_file, "w", encoding="utf8") as quantification_out:
