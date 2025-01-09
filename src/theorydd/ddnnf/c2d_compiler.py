@@ -290,6 +290,9 @@ class C2DCompiler(DDNNFCompiler):
             f"{timeout_string}{_C2D_COMMAND} -in {tmp_folder}/dimacs.cnf -exist {tmp_folder}/quantification.exist -smooth -reduce > /dev/null"
         )
         if result != 0:
+            # clean if necessary
+            if save_path is None:
+                self._clean_tmp_folder(tmp_folder)
             raise TimeoutError("c2d compilation failed: timeout")
         elapsed_time = time.time() - start_time
         computation_logger["dDNNF compilation time"] = elapsed_time
@@ -307,8 +310,8 @@ class C2DCompiler(DDNNFCompiler):
         result, nodes, edges = self.from_nnf_to_pysmt(
             f"{tmp_folder}/dimacs.cnf.nnf")
         # clean if necessary
-        if os.path.exists(tmp_folder) and save_path is None:
-            os.system(f"rm -rd {tmp_folder}")
+        if save_path is None:
+            self._clean_tmp_folder(tmp_folder)
         elapsed_time = time.time() - start_time
         computation_logger["pysmt translation time"] = elapsed_time
         self.logger.info("Pysmt translation completed in %s seconds", str(elapsed_time))

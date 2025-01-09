@@ -342,6 +342,8 @@ class D4Compiler(DDNNFCompiler):
             f"{timeout_string}{_D4_COMMAND} -dDNNF {tmp_folder}/dimacs.cnf -out={tmp_folder}/compilation_output.nnf > /dev/null"
         )
         if result != 0:
+            if save_path is None:
+                self._clean_tmp_folder(tmp_folder)
             raise TimeoutError("d4 compilation failed: timeout")
         elapsed_time = time.time() - start_time
         computation_logger["dDNNF compilation time"] = elapsed_time
@@ -364,8 +366,8 @@ class D4Compiler(DDNNFCompiler):
         self.logger.info("Translating to pysmt...")
         phi_ddnnf, nodes, edges = self.from_nnf_to_pysmt(
             f"{tmp_folder}/compilation_output.nnf")
-        if os.path.exists(tmp_folder) and save_path is None:
-            os.system(f"rm -rd {tmp_folder}")
+        if save_path is None:
+            self._clean_tmp_folder(tmp_folder)
         elapsed_time = time.time() - start_time
         computation_logger["pysmt translation time"] = elapsed_time
         self.logger.info("pysmt translation completed in %s seconds", str(elapsed_time))

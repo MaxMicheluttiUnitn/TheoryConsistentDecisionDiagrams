@@ -6,16 +6,21 @@ import stat
 
 from git import Repo
 
+
 class InstallException(Exception):
     """an exception that is raised when installing goes wrong"""
 
     def __init__(self, msg):
         super().__init__(msg)
 
+
 C2D_SOURCE = "http://reasoning.cs.ucla.edu/c2d/fetchme.php"
 C2D_DOWNLOAD_ZIP = r"Linux%20i386"
 
 D4_REPO = "https://github.com/crillab/d4"
+
+TABULAR_REPO = "https://github.com/giuspek/tabularAllSMT"
+
 
 def get_args() -> Namespace:
     """Get arguments from command line"""
@@ -47,8 +52,7 @@ def setup_c2d(install_path: str) -> None:
         install_path (str): the directory to install c2d
     """
     install_path += "/c2d"
-    if not os.path.exists(install_path):
-        os.mkdir(install_path)
+    create_binary_folder(install_path)
 
     print("This data is required in order to to install c2d")
     name = input("Enter your name: ")
@@ -58,7 +62,11 @@ def setup_c2d(install_path: str) -> None:
     organization = input("Enter your organization: ")
     organization = organization.replace(" ", "%20")
 
-    download_command = "curl -d 'os="+C2D_DOWNLOAD_ZIP+f"&n={name}&e={email}&o={organization}' {C2D_SOURCE} --output {install_path}/c2d_linux.zip"
+    download_command = (
+        "curl -d 'os="
+        + C2D_DOWNLOAD_ZIP
+        + f"&n={name}&e={email}&o={organization}' {C2D_SOURCE} --output {install_path}/c2d_linux.zip"
+    )
     result = os.system(download_command)
     if result != 0:
         raise InstallException(f"Failed to download c2d from {C2D_SOURCE}")
@@ -82,18 +90,14 @@ def setup_d4(install_path: str) -> None:
         install_path (str): the directory to install d4
     """
     install_path += "/d4"
-    if not os.path.exists(install_path):
-        os.mkdir(install_path)
+    create_binary_folder(install_path)
 
     old_working_directory = os.getcwd()
 
     # clone d4 repo
-    print("Cloning D4 repository...")
     repo_path = install_path + "/repo"
-    if os.path.exists(repo_path):
-        os.system("rm -rdf --interactive=never "+ repo_path)
-    Repo.clone_from(D4_REPO, repo_path)
-    
+    clone_repo(D4_REPO, repo_path)
+
     print("Compiling D4...")
     # cd into repo
     os.chdir(repo_path)
@@ -101,21 +105,19 @@ def setup_d4(install_path: str) -> None:
     result = os.system("make -j8")
     if result != 0:
         raise InstallException("Failed to compile the D4 compiler!")
-    
+
     # copy binary outside of repo folder
     os.system(f"cp {repo_path}/d4 {install_path}/d4.bin")
 
     # make binary executable
-    #os.system(f"chmod +x {install_path}/d4.bin")
-    os.chmod(install_path+ "/d4.bin", stat.S_IXUSR)
+    os.chmod(install_path + "/d4.bin", stat.S_IXUSR)
 
-    #clean everything
-    print("Cleaning up...")
-    if os.path.exists(repo_path):
-        os.system("rm -rdf --interactive=never "+ repo_path)
+    # clean everything
+    clean_repo(repo_path)
 
     # go back to old working directory
     os.chdir(old_working_directory)
+
 
 def setup_tabular(install_path: str) -> None:
     """Installs tabular in the provided directory
@@ -124,11 +126,42 @@ def setup_tabular(install_path: str) -> None:
         install_path (str): the directory to install tabular
     """
     install_path += "/tabular"
-    if not os.path.exists(install_path):
-        os.mkdir(install_path)
+    create_binary_folder(install_path)
 
-    raise NotImplementedError()
+    # clone repo
+    repo_path = install_path + "/repo"
+    clone_repo(TABULAR_REPO, repo_path)
 
+    # copy binary outside of repo folder
+    os.system(f"cp {repo_path}/tabularAllSMT {install_path}/tabularAllSMT.bin")
+
+    # make binary executable
+    os.chmod(install_path + "/tabularAllSMT.bin", stat.S_IXUSR)
+
+    clean_repo(repo_path)
+
+
+def clean_repo(repo_path: str) -> None:
+    """Removes the cloned repository"""
+    # clean everything
+    print("Cleaning up...")
+    if os.path.exists(repo_path):
+        os.system("rm -rdf --interactive=never " + repo_path)
+
+
+def clone_repo(repo_url: str, repo_path: str) -> None:
+    """clones a git repo"""
+    # clean up for cloning
+    print(f"Cloning repository {repo_url}...")
+    if os.path.exists(repo_path):
+        os.system("rm -rdf --interactive=never " + repo_path)
+    # clone repo
+    Repo.clone_from(repo_url, repo_path)
+
+def create_binary_folder(binary_path: str) -> None:
+    """Creates the binary folder if it doesn't exist"""
+    if not os.path.exists(binary_path):
+        os.mkdir(binary_path)
 
 def run_setup():
     """Run setup"""
