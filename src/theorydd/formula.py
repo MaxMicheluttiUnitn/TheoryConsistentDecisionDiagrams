@@ -4,7 +4,7 @@ from io import StringIO
 import json
 import os
 
-from typing import List, Dict, Set, Tuple
+from typing import Iterable, List, Dict, Set, Tuple
 from pysmt.shortcuts import (
     Symbol as _Symbol,
     REAL as _REAL,
@@ -13,6 +13,7 @@ from pysmt.shortcuts import (
     BOOL as _BOOL,
     Real as _Real,
     LT as _LT,
+    Not as _Not,
     read_smtlib as _read_smtlib,
     write_smtlib as _write_smtlib,
     TRUE as _TRUE,
@@ -24,6 +25,7 @@ from pysmt.smtlib.parser.parser import get_formula as _get_formula
 from theorydd.util._string_generator import SequentialStringGenerator
 
 from theorydd.util.custom_exceptions import FormulaException
+from theorydd.util.disjoint_set import DisjointSet
 from theorydd.walkers.normalizer import NormalizerWalker
 from theorydd.walkers.duoble_negation_walker import DoubleNegWalker
 
@@ -40,15 +42,17 @@ def default_phi() -> FNode:
     Returns:
         FNode: the default formula
     """
-    x1, x2 = (
+    x1, x2, b1 = (
         _Symbol("x1", _REAL),
         _Symbol("x2", _REAL),
+        _Symbol("b1", _BOOL),
     )
 
-    # phi = [(x>0) ∧ (x<1)] ∧ [(y<1) ∨ ((x>y) ∧ (y>1/2))]
+    # phi = [(x>0) ∧ (x<1)] ∧ [(y<1) ∨ ((x>y) ∧ (y>1/2))] ∧ b1
     phi = _And(
         _And(_LT(_Real(0), x1), _LT(x1, _Real(1))),
         _Or(_LT(x2, _Real(1)), _And(_LT(x2, x1), _LT(_Real(0.5), x2))),
+        b1,
     )
     return phi
 
@@ -333,3 +337,93 @@ def without_double_neg(phi: FNode) -> FNode:
     """
     walker = DoubleNegWalker()
     return walker.walk(phi)
+
+
+def get_atom_partitioning(phi: FNode) -> List[Set[FNode]]:
+    """partitions atoms into set
+
+    phi must be a normalized formula or the partitioning may not be correct
+
+    Args:
+        phi (FNode): a pysmt formula
+        skip_normalization (bool): if True, the formula is not normalized before partitioning
+
+    Returns:
+        List[Set[FNode]]: a list of sets of atoms that are in the same partition
+    """
+    atoms = get_atoms(phi)
+    all_vars = phi.get_free_variables()
+    if all_vars is None:
+        # no free variables in the formula
+        return [set(atoms)]
+
+    # merge all variables that appear in the same atom
+    disjoint_set_vars = DisjointSet(all_vars)
+    # associate to each atom the first free variable that appears in it
+    atoms_repr_vars: Dict[FNode, FNode] = {}
+    theory_atoms = []
+    for atom in atoms:
+        atom_vars = list(atom.get_free_variables())
+
+        # skip boolean atoms (that do not have free variables)
+        if len(atom_vars) == 0:
+            continue
+
+        # add the atom to the theory_atoms list
+        theory_atoms.append(atom)
+
+        # associate to the atom a representative variable
+        atoms_repr_vars[atom] = atom_vars[0]
+
+        # join all variables that appear in the same atom
+        for index, var_1 in enumerate(atom_vars):
+            for var_2 in atom_vars[(index + 1) :]:
+                disjoint_set_vars.union(var_1, var_2)
+    # now all atoms have a find result on the disjoint set
+    # which is disjoint_set_vars.find(atom.get_free_variables()[0])
+
+    # merge atoms that share a variable
+    disjoint_set_atoms = DisjointSet(theory_atoms)
+    for index, atom_1 in enumerate(theory_atoms):
+        # get repr for atom_1's first variable
+        atom_1_repr = disjoint_set_vars.find(atoms_repr_vars[atom_1])
+        for atom_2 in atoms[(index + 1) :]:
+            # get repr for atom_2's first variable
+            atom_2_repr = disjoint_set_vars.find(atoms_repr_vars[atom_2])
+            # join atoms if they share the repr of disjoint_set_vars of their repr variable
+            if atom_1_repr == atom_2_repr:
+                disjoint_set_atoms.union(atom_1, atom_2)
+
+    # get partitioning of theory atoms
+    atoms_sets = list(disjoint_set_atoms.get_sets().values())
+
+    # add singleton partition for all boolean atoms
+    for atom in atoms:
+        if atom not in theory_atoms:
+            singleton_set = set()
+            singleton_set.add(atom)
+            atoms_sets.append(singleton_set)
+
+    return atoms_sets
+
+def get_true_given_atoms(atoms: Iterable[FNode]) -> FNode:
+    """returns the formula that is True given the atoms
+
+    Args:
+        atoms (Iterable[FNode]): a set of pysmt atoms
+
+    Returns:
+        FNode: the formula that is always True given the atoms
+    """
+    if len(atoms) == 0:
+        return _TRUE()
+    big_and_items = []
+    for atom in atoms:
+        big_and_items.append(_Or(atom, _Not(atom)))
+    return _And(*big_and_items)
+
+
+if __name__ == "__main__":
+    phi_test = default_phi()
+    data = get_atom_partitioning(phi_test)
+    print(data)

@@ -55,7 +55,7 @@ class MathSATExtendedPartialEnumerator(SMTEnumerator):
         self._atoms = []
 
     def check_all_sat(
-        self, phi: FNode, boolean_mapping: Dict[FNode, FNode] = None
+        self, phi: FNode, boolean_mapping: Dict[FNode, FNode] | None = None
     ) -> bool:
         """Computes All-SMT for the SMT-formula phi using partial assignment and Tsetsin CNF-ization
 
