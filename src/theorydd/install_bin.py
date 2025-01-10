@@ -185,10 +185,10 @@ def run_setup():
         except InstallException as e:
             print(f"Failed to install d4: {e}")
     if args.tabular:
-        print(f"Installing tabular inside {args.tabular}...")
+        print("Installing tabular AllSMT...")
         try:
             setup_tabular(binary_path)
-            print("tabular successfully installed")
+            print("TabularAllSMT successfully installed")
         except InstallException as e:
             print(f"Failed to install tabular: {e}")
 

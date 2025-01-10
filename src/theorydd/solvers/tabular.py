@@ -83,7 +83,7 @@ class TabularSMTSolver(SMTEnumerator):
             minimize_models = "false"
 
         # run solver with one hour timeout
-        options = f"--debug.dump_theory_lemmas=true --dpll.store_tlemmas=true --theory.la.split_rat_eq=false --preprocessor.simplification=0 --preprocessor.toplevel_propagation=false --dpll.allsat_minimize_model={minimize_models}"
+        options = f"--debug.dump_theory_lemmas=true --dpll.store_tlemmas=true --theory.la.split_rat_eq=false --preprocessor.simplification=0 --preprocessor.toplevel_propagation=false --dpll.allsat_minimize_model={minimize_models} --noprint"
 
         command = f"timeout 3600 {_TABULAR_ALLSMT_COMMAND} {options} < {phi_file}"
         try:
