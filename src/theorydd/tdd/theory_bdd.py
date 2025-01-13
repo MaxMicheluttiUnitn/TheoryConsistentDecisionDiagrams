@@ -218,15 +218,8 @@ class TheoryBDD(TheoryDD):
         Raises:
             QueryError: if the model counting fails
         """
-        mc = self.count_models()
-        if mc == -1:
-            raise QueryError(
-                "Model counting failed, therefore validity cannot be determined"
-            )
-        care_vars = self._get_care_vars()
-        valid_formula_models = 2 ** len(care_vars)
-        return mc == valid_formula_models
-
+        return self.root == self.bdd.true
+    
     def pick(self) -> Dict[FNode, bool] | None:
         """Returns a partial model of the encoded formula,
         None if the formula is unsatisfiable"""
