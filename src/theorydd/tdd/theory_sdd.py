@@ -132,7 +132,7 @@ class TheorySDD(TheoryDD):
         walker = SDDWalker(self.atom_literal_map, self.manager)
         elapsed_time = time.time() - start_time
         self.logger.info(
-            "BDD preparation phase completed in %s seconds", str(elapsed_time)
+            "SDD preparation phase completed in %s seconds", str(elapsed_time)
         )
         computation_logger["T-SDD"]["DD preparation time"] = elapsed_time
 
