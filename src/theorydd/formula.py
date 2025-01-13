@@ -422,6 +422,16 @@ def get_true_given_atoms(atoms: Iterable[FNode]) -> FNode:
         big_and_items.append(_Or(atom, _Not(atom)))
     return _And(*big_and_items)
 
+def negate(phi: FNode) -> FNode:
+    """returns the negation of phi
+
+    Args:
+        phi (FNode): a pysmt formula
+
+    Returns:
+        FNode: the negation of phi
+    """
+    return _Not(phi)
 
 if __name__ == "__main__":
     phi_test = default_phi()
