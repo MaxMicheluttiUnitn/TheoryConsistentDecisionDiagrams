@@ -12,6 +12,7 @@ from theorydd.constants import SAT, UNSAT
 def extract(
     phi: FNode,
     smt_solver: SMTEnumerator,
+    enumerate_true: bool = False,
     use_boolean_mapping: bool = True,
     computation_logger: Dict = None,
 ) -> Tuple[bool, List[FNode], Dict | None]:
@@ -20,7 +21,10 @@ def extract(
     Args:
         phi (FNode): a pysmt formula
         smt_solver (SMTSolver | PartialSMTSolver): the SMT solver to be used for lemma extraction
-        use_boolean_mapping (bool) [False]: optional for SMTSolver
+        enumerate_true (bool) [False]: if set to True, enumerate all T-lemmas possible
+            over the atoms of phi
+        use_boolean_mapping (bool) [False]: optional for SMTEnumerator, if the solver 
+            supports enumerating thorugh a boolean mapping
         computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
 
     Returns:
@@ -35,7 +39,11 @@ def extract(
     if use_boolean_mapping:
         boolean_mapping = formula.get_boolean_mapping(phi)
     start_time = time.time()
-    if smt_solver.check_all_sat(phi, boolean_mapping) == UNSAT:
+    if enumerate_true:
+        smt_result = smt_solver.enumerate_true(phi)
+    else:
+        smt_result = smt_solver.check_all_sat(phi, boolean_mapping)
+    if smt_result == UNSAT:
         elapsed_time = time.time() - start_time
         logger.info("Computed All Sat in %s seconds", str(elapsed_time))
         logger.info("Phi is T-UNSAT")
