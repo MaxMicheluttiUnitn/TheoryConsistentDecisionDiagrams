@@ -43,22 +43,17 @@ def extract(
         smt_result = smt_solver.enumerate_true(phi)
     else:
         smt_result = smt_solver.check_all_sat(phi, boolean_mapping)
-    if smt_result == UNSAT:
-        elapsed_time = time.time() - start_time
-        logger.info("Computed All Sat in %s seconds", str(elapsed_time))
-        logger.info("Phi is T-UNSAT")
-        computation_logger["All-SMT computation time"] = elapsed_time
-        computation_logger["All-SMT result"] = "UNSAT"
-        lemmas = smt_solver.get_theory_lemmas()
-        computation_logger["T-lemmas amount"] = len(lemmas)
-        return UNSAT, lemmas, boolean_mapping
     elapsed_time = time.time() - start_time
     logger.info("Computed All Sat in %s seconds", str(elapsed_time))
-    logger.info("Phi is T-SAT")
     computation_logger["All-SMT computation time"] = elapsed_time
-    computation_logger["All-SMT result"] = "SAT"
     lemmas = smt_solver.get_theory_lemmas()
     computation_logger["T-lemmas amount"] = len(lemmas)
+    if smt_result == UNSAT:
+        logger.info("Phi is T-UNSAT")
+        computation_logger["All-SMT result"] = "UNSAT"
+        return UNSAT, lemmas, boolean_mapping
+    logger.info("Phi is T-SAT")
+    computation_logger["All-SMT result"] = "SAT"
     return SAT, lemmas, boolean_mapping
 
 
