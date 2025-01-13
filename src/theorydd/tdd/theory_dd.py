@@ -22,25 +22,10 @@ class TheoryDD(ABC):
     """
 
     def __init__(self):
-        self.mapping = {}
+        self.abstraction = {}
+        self.refinement = {}
         self.qvars = []
-        self.logger = logging.getLogger("thoerydd_tdd")
-
-    def _compute_mapping(
-        self, atoms: List[FNode], computation_logger: dict
-    ) -> Dict[FNode, str]:
-        """computes the mapping"""
-        start_time = time.time()
-        self.logger.info("Creating mapping...")
-        mapping = {}
-
-        string_generator = SequentialStringGenerator()
-        for atom in atoms:
-            mapping[atom] = string_generator.next_string()
-        elapsed_time = time.time() - start_time
-        self.logger.info("Mapping created in %s seconds", str(elapsed_time))
-        computation_logger["variable mapping creation time"] = elapsed_time
-        return mapping
+        self.logger = logging.getLogger("theorydd_tdd")
 
     def _normalize_input(
         self, phi: FNode, solver: SMTEnumerator, computation_logger: Dict
@@ -131,7 +116,7 @@ class TheoryDD(ABC):
         computation_logger["t-lemmas DD building time"] = elapsed_time
 
         # ENUMERATING OVER FRESH T-ATOMS
-        mapped_qvars = [self.mapping[atom] for atom in self.qvars]
+        mapped_qvars = [self.abstraction[atom] for atom in self.qvars]
         if len(mapped_qvars) > 0:
             start_time = time.time()
             self.logger.info("Enumerating over fresh T-atoms...")

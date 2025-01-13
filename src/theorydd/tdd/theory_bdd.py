@@ -10,6 +10,7 @@ import pydot
 from dd import cudd as cudd_bdd
 from theorydd import formula
 from theorydd.util._dd_dump_util import change_bbd_dot_names as _change_bbd_dot_names
+from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.util._utils import (
     cudd_dump as _cudd_dump,
     cudd_load as _cudd_load,
@@ -137,6 +138,22 @@ class TheoryBDD(TheoryDD):
         else:
             self.root = self._build_unsat(walker, computation_logger["T-BDD"])
 
+    def _compute_mapping(
+        self, atoms: List[FNode], computation_logger: dict
+    ) -> Dict[FNode, str]:
+        """computes the mapping"""
+        start_time = time.time()
+        self.logger.info("Creating mapping...")
+        mapping = {}
+
+        string_generator = SequentialStringGenerator()
+        for atom in atoms:
+            mapping[atom] = string_generator.next_string()
+        elapsed_time = time.time() - start_time
+        self.logger.info("Mapping created in %s seconds", str(elapsed_time))
+        computation_logger["variable mapping creation time"] = elapsed_time
+        return mapping
+
     def _enumerate_qvars(
         self, tlemmas_dd: object, mapped_qvars: List[object]
     ) -> object:
@@ -219,7 +236,7 @@ class TheoryBDD(TheoryDD):
             QueryError: if the model counting fails
         """
         return self.root == self.bdd.true
-    
+
     def pick(self) -> Dict[FNode, bool] | None:
         """Returns a partial model of the encoded formula,
         None if the formula is unsatisfiable"""
