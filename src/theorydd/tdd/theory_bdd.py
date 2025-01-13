@@ -245,6 +245,21 @@ class TheoryBDD(TheoryDD):
         items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
 
+    def condition(self, condition: str) -> None:
+        """Condition the T-BDD over a given atom
+
+        Args:
+            condition (str): the label of atom over which to condition
+        """
+        negated = False
+        if condition.startswith("-"):
+            negated = True
+            condition = condition[1:]
+        condition_bdd = self.bdd.add_expr(condition)
+        if negated:
+            condition_bdd = ~condition_bdd
+        self.root = self.root & condition_bdd
+
     def save_to_folder(self, folder_path: str) -> None:
         """Save all the T-BDD data inside files in the specified folder
 
