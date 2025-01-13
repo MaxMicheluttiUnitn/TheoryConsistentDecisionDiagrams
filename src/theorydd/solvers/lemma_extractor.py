@@ -33,6 +33,7 @@ def extract(
         Dict | None: when using a boolean mapping the boolean mapping used, otherwise None
     """
     logger = logging.getLogger("theorydd_lemma_extractor")
+    logger.info("Computing AllSMT...")
     if computation_logger is None:
         computation_logger = {}
     boolean_mapping = None
@@ -44,7 +45,7 @@ def extract(
     else:
         smt_result = smt_solver.check_all_sat(phi, boolean_mapping)
     elapsed_time = time.time() - start_time
-    logger.info("Computed All Sat in %s seconds", str(elapsed_time))
+    logger.info("Computed AllSMT in %s seconds", str(elapsed_time))
     computation_logger["All-SMT computation time"] = elapsed_time
     lemmas = smt_solver.get_theory_lemmas()
     computation_logger["T-lemmas amount"] = len(lemmas)
