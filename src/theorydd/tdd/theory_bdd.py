@@ -197,7 +197,7 @@ class TheoryBDD(TheoryDD):
             self.logger.info("Unable to dump T-BDD file: format not unsupported")
             return
 
-    def get_mapping(self) -> Dict:
+    def get_mapping(self) -> Dict[FNode, str]:
         """Returns the variable mapping used,
         which defines the abstraction function"""
         return self.abstraction
