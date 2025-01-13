@@ -17,6 +17,7 @@ from theorydd.util._utils import (
 )
 from theorydd.solvers.solver import SMTEnumerator
 from theorydd.formula import get_atoms
+from theorydd.util.custom_exceptions import QueryError
 from theorydd.walkers.walker_bdd import BDDWalker
 from theorydd.solvers.lemma_extractor import find_qvars
 from theorydd.constants import SAT
@@ -195,10 +196,34 @@ class TheoryBDD(TheoryDD):
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
         return self.mapping
+    
+    def is_sat(self) -> bool:
+        """Returns True if the encoded formula is satisfiable"""
+        return self.root != self.bdd.false
+    
+    def _get_care_vars(self) -> List[str]:
+        dont_care_vars = set([self.mapping[qvar] for qvar in self.qvars])
+        all_vars = set(self.mapping.values())
+        care_vars = all_vars.difference(dont_care_vars)
+        return care_vars
+
+    def is_valid(self) -> bool:
+        """Returns True if the encoded formula is valid
+        
+        Raises:
+            QueryError: if the model counting fails
+        """
+        mc = self.count_models()
+        if mc == -1:
+            raise QueryError("Model counting failed, therefore validity cannot be determined")
+        care_vars = self._get_care_vars()
+        valid_formula_models = 2 ** len(care_vars)
+        return mc == valid_formula_models
 
     def pick(self) -> Dict[FNode, bool] | None:
-        """Returns a partial model of the encoded formula"""
-        if self.root == self.bdd.false:
+        """Returns a partial model of the encoded formula,
+        None if the formula is unsatisfiable"""
+        if not self.is_sat():
             return None
         return self._convert_assignment(self.root.pick())
 
@@ -208,11 +233,9 @@ class TheoryBDD(TheoryDD):
 
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """Returns all partial models of the encoded formula"""
-        if self.root == self.bdd.false:
+        if not self.is_sat():
             return []
-        dont_care_vars = set([self.mapping[qvar] for qvar in self.qvars])
-        all_vars = set(self.mapping.values())
-        care_vars = all_vars.difference(dont_care_vars)
+        care_vars = self._get_care_vars()
         items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
 

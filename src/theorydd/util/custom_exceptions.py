@@ -18,6 +18,12 @@ class UnsupportedNodeException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
+class QueryError(Exception):
+    '''An exception for errors in queries'''
+
+    def __init__(self, message):
+        super().__init__(message)
+
 class InvalidSolverException(Exception):
     """An exception for invalid solvers"""
     def __init__(self, message):
