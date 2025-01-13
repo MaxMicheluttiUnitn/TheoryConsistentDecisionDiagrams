@@ -4,7 +4,7 @@ import json
 import time
 import os
 import logging
-from typing import Dict, List
+from typing import Dict, Generator, List
 from pysmt.fnode import FNode
 import pydot
 from dd import cudd as cudd_bdd
@@ -254,6 +254,14 @@ class TheoryBDD(TheoryDD):
         care_vars = self._get_care_vars()
         items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
+    
+    def pick_all_iter(self) -> Generator[Dict[FNode, bool]]:
+        """Returns all partial models of the encoded formula"""
+        if not self.is_sat():
+            return
+        care_vars = self._get_care_vars()
+        for item in self.bdd.pick_iter(self.root, care_vars):
+            yield self._convert_assignment(item)
 
     def condition(self, condition: str) -> None:
         """Condition the T-BDD over a given atom

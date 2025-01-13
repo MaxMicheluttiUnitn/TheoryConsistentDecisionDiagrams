@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import time
-from typing import Dict, List, Set
+from typing import Dict, Generator, List, Set
 from pysmt.fnode import FNode
 from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
@@ -320,12 +320,22 @@ class TheorySDD(TheoryDD):
                 refined_model[atom] = True
         return refined_model
 
-    def pick(self) -> Dict[FNode, bool]:
+    def pick(self) -> Dict[FNode, bool] | None:
         """Returns a model of the encoded formula"""
-        raise NotImplementedError()
+        if not self.is_sat():
+            return None
+        for mod in self.root.models():
+            return self._refine_model(mod)
+        
+    def pick_all_iter(self) -> Generator[Dict[FNode, bool]]:
+        """Returns an iterator over the models of the encoded formula"""
+        for mod in self.root.models():
+            yield self._refine_model(mod)
 
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """returns a list of all the models in the encoded formula"""
+        if not self.is_sat():
+            return []
         items = []
         for mod in self.root.models():
             items.append(self._refine_model(mod))
