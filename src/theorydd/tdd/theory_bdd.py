@@ -34,7 +34,8 @@ class TheoryBDD(TheoryDD):
     bdd: cudd_bdd.BDD
     root: cudd_bdd.Function
     qvars: List[FNode]
-    mapping: Dict[FNode, object]
+    abstraction: Dict[FNode, str]
+    refinement: Dict[str, FNode]
     logger: logging.Logger
 
     def __init__(
@@ -80,9 +81,7 @@ class TheoryBDD(TheoryDD):
             smt_solver = _get_solver(solver)
         else:
             smt_solver = solver
-        phi = self._normalize_input(
-            phi, smt_solver, computation_logger["T-BDD"]
-        )
+        phi = self._normalize_input(phi, smt_solver, computation_logger["T-BDD"])
 
         # LOAD LEMMAS
         tlemmas, sat_result = self._load_lemmas(
@@ -107,19 +106,18 @@ class TheoryBDD(TheoryDD):
         atoms = get_atoms(phi_and_lemmas)
 
         # CREATING VARIABLE MAPPING
-        self.mapping = self._compute_mapping(
-            atoms, computation_logger["T-BDD"]
-        )
+        self.abstraction = self._compute_mapping(atoms, computation_logger["T-BDD"])
+        self.refinement = {v: k for k, v in self.abstraction.items()}
 
         # PREPARE FOR BUILDING
         start_time = time.time()
         self.logger.info("starting T-BDD preparation phase...")
         self.bdd = cudd_bdd.BDD()
         appended_values = set()
-        all_values = [self.mapping[atom] for atom in self.qvars]
+        all_values = [self.abstraction[atom] for atom in self.qvars]
         for atom in self.qvars:
-            appended_values.add(self.mapping[atom])
-        for value in self.mapping.values():
+            appended_values.add(self.abstraction[atom])
+        for value in self.abstraction.values():
             if not value in appended_values:
                 all_values.append(value)
         self.bdd.declare(*all_values)
@@ -127,17 +125,21 @@ class TheoryBDD(TheoryDD):
         for i, item in enumerate(all_values):
             bdd_ordering[item] = i
         cudd_bdd.reorder(self.bdd, bdd_ordering)
-        walker = BDDWalker(self.mapping, self.bdd)
+        walker = BDDWalker(self.abstraction, self.bdd)
         elapsed_time = time.time() - start_time
-        self.logger.info("BDD preparation phase completed in %s seconds", str(elapsed_time))
+        self.logger.info(
+            "BDD preparation phase completed in %s seconds", str(elapsed_time)
+        )
         computation_logger["T-BDD"]["DD preparation time"] = elapsed_time
 
         if sat_result is None or sat_result == SAT:
-            self.root = self._build(phi,tlemmas,walker,computation_logger["T-BDD"])
+            self.root = self._build(phi, tlemmas, walker, computation_logger["T-BDD"])
         else:
-            self.root = self._build_unsat(walker,computation_logger["T-BDD"])
+            self.root = self._build_unsat(walker, computation_logger["T-BDD"])
 
-    def _enumerate_qvars(self, tlemmas_dd: object, mapped_qvars: List[object]) -> object:
+    def _enumerate_qvars(
+        self, tlemmas_dd: object, mapped_qvars: List[object]
+    ) -> object:
         return cudd_bdd.and_exists(tlemmas_dd, self.bdd.true, mapped_qvars)
 
     def __len__(self) -> int:
@@ -155,7 +157,9 @@ class TheoryBDD(TheoryDD):
     def count_models(self) -> int:
         """returns the amount of models in the T-BDD"""
         try:
-            total = self.root.count(nvars=len(self.mapping.keys()) - len(self.qvars))
+            total = self.root.count(
+                nvars=len(self.abstraction.keys()) - len(self.qvars)
+            )
         except RuntimeError:
             # sometimes CUDD throws a RuntimeError when counting models
             # when it runs out of memory
@@ -176,7 +180,7 @@ class TheoryBDD(TheoryDD):
                 full names of atoms
         """
         temporary_dot = "bdd_temporary_dot.dot"
-        reverse_mapping = dict((v, k) for k, v in self.mapping.items())
+        reverse_mapping = self.refinement
         if output_file.endswith(".dot"):
             self.bdd.dump(output_file, filetype="dot", roots=[self.root])
             if not dump_abstraction:
@@ -194,28 +198,31 @@ class TheoryBDD(TheoryDD):
             return
 
     def get_mapping(self) -> Dict:
-        """Returns the variable mapping used"""
-        return self.mapping
-    
+        """Returns the variable mapping used,
+        which defines the abstraction function"""
+        return self.abstraction
+
     def is_sat(self) -> bool:
         """Returns True if the encoded formula is satisfiable"""
         return self.root != self.bdd.false
-    
+
     def _get_care_vars(self) -> List[str]:
-        dont_care_vars = set([self.mapping[qvar] for qvar in self.qvars])
-        all_vars = set(self.mapping.values())
+        dont_care_vars = set([self.abstraction[qvar] for qvar in self.qvars])
+        all_vars = set(self.abstraction.values())
         care_vars = all_vars.difference(dont_care_vars)
         return care_vars
 
     def is_valid(self) -> bool:
         """Returns True if the encoded formula is valid
-        
+
         Raises:
             QueryError: if the model counting fails
         """
         mc = self.count_models()
         if mc == -1:
-            raise QueryError("Model counting failed, therefore validity cannot be determined")
+            raise QueryError(
+                "Model counting failed, therefore validity cannot be determined"
+            )
         care_vars = self._get_care_vars()
         valid_formula_models = 2 ** len(care_vars)
         return mc == valid_formula_models
@@ -228,8 +235,7 @@ class TheoryBDD(TheoryDD):
         return self._convert_assignment(self.root.pick())
 
     def _convert_assignment(self, assignment):
-        inv_map = {v: k for k, v in self.mapping.items()}
-        return {inv_map[var]: truth for var, truth in assignment.items()}
+        return {self.refinement[var]: truth for var, truth in assignment.items()}
 
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """Returns all partial models of the encoded formula"""
@@ -250,10 +256,10 @@ class TheoryBDD(TheoryDD):
             os.makedirs(folder_path)
         # SAVE MAPPING
         formula.save_abstraction_function(
-            self.mapping, f"{folder_path}/abstraction.json"
+            self.abstraction, f"{folder_path}/abstraction.json"
         )
         # SAVE QVARS
-        qvars_indexes = [self.mapping[qvar] for qvar in self.qvars]
+        qvars_indexes = [self.abstraction[qvar] for qvar in self.qvars]
         with open(f"{folder_path}/qvars.qvars", "w", encoding="utf8") as out:
             json.dump(qvars_indexes, out)
         # SAVE DD
@@ -269,17 +275,17 @@ class TheoryBDD(TheoryDD):
             raise FileNotFoundError(
                 f"Folder {folder_path} does not exist, cannot load T-BDD"
             )
-        self.mapping = formula.load_abstraction_function(
+        self.abstraction = formula.load_abstraction_function(
             f"{folder_path}/abstraction.json"
         )
-        reverse_mapping = dict((v, k) for k, v in self.mapping.items())
+        self.refinement = {v: k for k, v in self.abstraction.items()}
         self.bdd = cudd_bdd.BDD()
-        self.bdd.declare(*self.mapping.values())
+        self.bdd.declare(*self.abstraction.values())
         self.root = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
         # load qvars
         with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
             qvars_indexes = json.load(input_data)
-            self.qvars = [reverse_mapping[qvar_id] for qvar_id in qvars_indexes]
+            self.qvars = [self.refinement[qvar_id] for qvar_id in qvars_indexes]
 
 
 def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
