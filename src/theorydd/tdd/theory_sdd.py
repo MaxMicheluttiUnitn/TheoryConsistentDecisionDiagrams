@@ -187,7 +187,7 @@ class TheorySDD(TheoryDD):
         computation_logger["V-Tree building time"] = elapsed_time
 
     def __len__(self) -> int:
-        return max(self.root.count(), 1)
+        return max(self.root.live_count(), 1)
 
     def count_nodes(self) -> int:
         """Returns the number of nodes in the T-SDD"""
@@ -195,7 +195,7 @@ class TheorySDD(TheoryDD):
 
     def count_vertices(self) -> int:
         """Returns the number of nodes in the T-SDD"""
-        if self.root.is_true() or not self.root.is_decision():
+        if self.root.is_true() or not self.root.is_decision() or self.root.is_false():
             return 0
         else:
             elems = self.root.elements()
@@ -306,6 +306,19 @@ class TheorySDD(TheoryDD):
     def get_mapping(self) -> Dict:
         """Returns the variable mapping used"""
         return self.abstraction
+    
+    def _refine_model(self, model: Dict[int,int]) -> Dict[FNode, bool]:
+        """Refines a model from the SDD to the original formula"""
+        refined_model = {}
+        for key, value in model.items():
+            atom = self.refinement[key]
+            if atom in self.qvars:
+                continue
+            if value == 0:
+                refined_model[atom] = False
+            else:
+                refined_model[atom] = True
+        return refined_model
 
     def pick(self) -> Dict[FNode, bool]:
         """Returns a model of the encoded formula"""
@@ -313,7 +326,10 @@ class TheorySDD(TheoryDD):
 
     def pick_all(self) -> List[Dict[FNode, bool]]:
         """returns a list of all the models in the encoded formula"""
-        raise NotImplementedError()
+        items = []
+        for mod in self.root.models():
+            items.append(self._refine_model(mod))
+        return items
 
     def save_to_folder(self, folder_path: str) -> None:
         """Save the T-SDD in the specified solver
@@ -390,3 +406,9 @@ def tsdd_load_from_folder(folder_path: str) -> TheorySDD:
         folder_path (str): the path to the folder containing the T-SDD
     """
     return TheorySDD(None, folder_name=folder_path)
+
+if __name__ == "__main__":
+    from theorydd.formula import default_phi
+    phi = default_phi()
+    tsdd = TheorySDD(phi)
+    tsdd.pick_all()
