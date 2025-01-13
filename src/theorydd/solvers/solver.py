@@ -64,6 +64,10 @@ class SMTEnumerator(ABC):
 
             # if partition is UNSAT, the whole formula is UNSAT
             # therefore mark result as UNSAT
+
+            # notice that partitions should never be UNSAT
+            # since it is always possible to find a T-model
+            # for a partition
             if partition_sat_result == UNSAT:
                 complessive_sat_result = UNSAT
                 # should I continue enumerating lemmas?
