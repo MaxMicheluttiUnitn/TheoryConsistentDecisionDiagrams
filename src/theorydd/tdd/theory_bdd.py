@@ -210,7 +210,10 @@ class TheoryBDD(TheoryDD):
         """Returns all partial models of the encoded formula"""
         if self.root == self.bdd.false:
             return []
-        items = list(self.bdd.pick_iter(self.root))
+        dont_care_vars = set([self.mapping[qvar] for qvar in self.qvars])
+        all_vars = set(self.mapping.values())
+        care_vars = all_vars.difference(dont_care_vars)
+        items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
 
     def save_to_folder(self, folder_path: str) -> None:
