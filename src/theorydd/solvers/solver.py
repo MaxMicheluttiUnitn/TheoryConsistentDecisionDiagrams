@@ -63,7 +63,7 @@ class SMTEnumerator(ABC):
             partition_phi = get_true_given_atoms(partition)
 
             # check if partition is SAT and extract lemmas
-            partition_sat_result = self.check_all_sat(partition_phi)
+            partition_sat_result = self.check_all_sat(partition_phi, boolean_mapping=None)
 
             # add lemmas to the set of all lemmas
             for lemma in self.get_theory_lemmas():

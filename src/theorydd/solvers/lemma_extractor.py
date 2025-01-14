@@ -15,7 +15,7 @@ def extract(
     enumerate_true: bool = False,
     use_boolean_mapping: bool = True,
     computation_logger: Dict = None,
-) -> Tuple[bool, List[FNode], Dict | None]:
+) -> Tuple[bool, List[FNode], Dict[FNode,FNode] | None]:
     """extract lemmas from a SMT-formula
 
     Args:
