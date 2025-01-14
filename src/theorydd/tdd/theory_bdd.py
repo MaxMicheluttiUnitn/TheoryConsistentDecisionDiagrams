@@ -255,7 +255,7 @@ class TheoryBDD(TheoryDD):
         items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
     
-    def pick_all_iter(self) -> Generator[Dict[FNode, bool]]:
+    def pick_all_iter(self) -> Generator[Dict[FNode, bool], None, None]:
         """Returns all partial models of the encoded formula"""
         if not self.is_sat():
             return

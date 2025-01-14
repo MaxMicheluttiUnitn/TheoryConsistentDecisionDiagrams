@@ -327,7 +327,7 @@ class TheorySDD(TheoryDD):
         for mod in self.root.models():
             return self._refine_model(mod)
         
-    def pick_all_iter(self) -> Generator[Dict[FNode, bool]]:
+    def pick_all_iter(self) -> Generator[Dict[FNode, bool], None, None]:
         """Returns an iterator over the models of the encoded formula"""
         for mod in self.root.models():
             yield self._refine_model(mod)
