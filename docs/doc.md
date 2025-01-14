@@ -32,27 +32,27 @@ To install the package, first install the **dd** dependency as follows:
     pip install git+https://github.com/masinag/dd.git@main -vvv --use-pep517 --no-build-isolation
 ```
 
-The dd package cannot be installed directly from pip's package repository since this packages uses a fork of the dd package which allows for compilation into the LDD target language. <br>
-You can check that the dependency is installed correctly if the following command does not raise any errors
+The dd package cannot be installed directly from pip's package repository since this package depends on a fork of the dd package which allows for compilation into the LDD target language. The fork is publicly available [here](https://github.com/masinag/dd).<br>
+You can check that the dependency is installed correctly if the following command does not raise any errors:
 
 ```
     python -c 'from dd import ldd; ldd.LDD(ldd.TVPI,0,0)'
 ```
 
-Now you can install the theorydd package (this package) directly from git
+Now you can install the theorydd package (this package) directly from this repository using pip:
 
 ```
     pip install theorydd@git+https://github.com/MaxMicheluttiUnitn/TheoryConsistentDecisionDiagrams@main
 ```
 
-After the package and all the depemdencies have been installed, use the **pysmt-install** tool to install the MathSAT SMT-solver. This tool should be automatically installed with pysmt. <br>
-**IMPORTANT**: In case you are installing this package inside a **virtual environment**, install the solver in a subfolder of the virtual environment by adding the option _--install-path YOUR_VENV_FOLDER/solvers_
+After the package and all the depemdencies have been installed, use the **pysmt-install** tool to install the MathSAT SMT-solver. This tool is automatically installed when pysmt is first installed on your machine. <br>
+**IMPORTANT**: In case you are installing this package inside a **python virtual environment**, install the solver in a subfolder of the virtual environment by adding the option _--install-path YOUR_VENV_FOLDER/solvers_
 
 ```
     pysmt-install --msat
 ```
 
-Now the installation process should be complete, and you can check that everything is installed correctly by typing:
+Now the installation process should be complete, and you can check that everything is installed correctly with the following command:
 
 ```
     python -c "from theorydd.theory_bdd import TheoryBDD as TBDD; import theorydd.formula as f; TBDD(f.default_phi())"
@@ -62,21 +62,22 @@ If this command does not raise any error, than the package is ready for use.
 
 ### Installing binaries
 
-Some modules of this package require a binary to be executed during runtime. These binaries do not come with the package at installation time and must be installed by the user. To facilitate this operation, this package comes with a command **theorydd_install** which allows for easy installing of the required binaries. <br>
-The **theorydd_install** command takes 3 options:
+Some modules of this package require a binary to be executed to work correctly. These binaries do not come with the package at installation time and must be installed by the user. <br> 
+To facilitate this operation, this package comes with a command **theorydd_install** which allows for easy installing of the required binaries. <br>
+The **theorydd_install** command takes 3 optional arguments:
 
 - **--tabular**: installs the **[tabularSMT](https://github.com/giuspek/tabularAllSMT)** solver binary and grants it execution permissions
 - **--c2d**: installs the **[c2d](http://reasoning.cs.ucla.edu/c2d/)** d-DNNF compiler and grants it execution permissions
 - **--d4**: installs the **[D4](https://github.com/crillab/d4)** d-DNNF compiler and grants it execution permissions
 
-Example:
+The following example will try to install all the binaries on your machine:
 
 ```
 theorydd_install --tabular --c2d --d4
 ```
 
-In alternative, the binaries can be **manually installed** in the correct location by the user. The folder structure below must be respected, otherwise the binaries will not be found during execution. <br>
-Remember to _chmod_ _+x_ the binaries before using them.
+In alternative, the binaries can be **manually installed** in the correct location by the user. The folder structure must be as shown below, otherwise the binaries will not be found during execution. <br>
+Remember to grant execution privileges (_chmod +x_) to the binaries before using them.
 
 ```
 -theorydd
@@ -100,7 +101,8 @@ All **constants** for this package are defined inside the _constants.py_ module.
 
 ## SMT Enumerators
 
-SMTEnumerators are modules that contain classes that inherit from the abstract class **SMTEnumerator** and override all the abstract methods defined into it. These classes are defined [here](../src/theorydd/solvers/).<br>
+SMTEnumerators are classes that inherit from the abstract class **SMTEnumerator** and override all the abstract methods defined into it. These classes are defined [here](../src/theorydd/solvers/).<br>
+Furthermore, a module _[lemma extractor](#lemma-extractor)_ containing some useful functions for enumeration is also defined there. <br>
 Available classes and modules:
 - **[SMTEnumerator](#smtenumerator)**<br>
 - **[MathSATTotalEnumerator](#mathsattotalenumerator)**<br>
