@@ -187,7 +187,7 @@ class TheorySDD(TheoryDD):
         computation_logger["V-Tree building time"] = elapsed_time
 
     def __len__(self) -> int:
-        return max(self.root.live_count(), 1)
+        return max(self.manager.live_count(), 1)
 
     def count_nodes(self) -> int:
         """Returns the number of nodes in the T-SDD"""
