@@ -5,7 +5,8 @@ import json
 import logging
 import os
 import time
-from typing import Dict, Generator, List, Set
+from typing import Dict, List, Set
+from collections.abc import Iterator
 from pysmt.fnode import FNode
 from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
 from theorydd import formula
@@ -327,7 +328,7 @@ class TheorySDD(TheoryDD):
         for mod in self.root.models():
             return self._refine_model(mod)
         
-    def pick_all_iter(self) -> Generator[Dict[FNode, bool], None, None]:
+    def pick_all_iter(self) -> Iterator[Dict[FNode, bool]]:
         """Returns an iterator over the models of the encoded formula"""
         for mod in self.root.models():
             yield self._refine_model(mod)

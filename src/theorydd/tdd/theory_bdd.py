@@ -4,7 +4,8 @@ import json
 import time
 import os
 import logging
-from typing import Dict, Generator, List
+from typing import Dict, List
+from collections.abc import Iterator
 from pysmt.fnode import FNode
 import pydot
 from dd import cudd as cudd_bdd
@@ -18,7 +19,6 @@ from theorydd.util._utils import (
 )
 from theorydd.solvers.solver import SMTEnumerator
 from theorydd.formula import get_atoms
-from theorydd.util.custom_exceptions import QueryError
 from theorydd.walkers.walker_bdd import BDDWalker
 from theorydd.solvers.lemma_extractor import find_qvars
 from theorydd.constants import SAT
@@ -255,7 +255,7 @@ class TheoryBDD(TheoryDD):
         items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
     
-    def pick_all_iter(self) -> Generator[Dict[FNode, bool], None, None]:
+    def pick_all_iter(self) -> Iterator[Dict[FNode, bool]]:
         """Returns all partial models of the encoded formula"""
         if not self.is_sat():
             return
