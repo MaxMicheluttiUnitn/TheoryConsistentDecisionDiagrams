@@ -23,7 +23,8 @@ dependencies = [
     "PySMT==0.9.6.dev53",
     "dd @ git+https://github.com/masinag/dd.git#egg=main",
     "allsat_cnf @ git+https://github.com/masinag/allsat-cnf@main",
-    "GitPython>=3.1.44"
+    "GitPython>=3.1.44",
+    "python-dotenv==1.0.1"
 ]
 
 [project.urls]
