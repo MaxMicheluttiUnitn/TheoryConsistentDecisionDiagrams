@@ -1,6 +1,6 @@
 """this module handles interactions with the mathsat solver"""
 
-from typing import List, Dict
+from typing import Iterable, List, Dict
 from pysmt.shortcuts import Solver, Iff, BOOL
 from pysmt.fnode import FNode
 import mathsat
@@ -104,10 +104,17 @@ class MathSATTotalEnumerator(SMTEnumerator):
         """Returns the models found during the All-SAT computation"""
         return self._models
 
-    def get_converter(self):
+    def get_converter(self) -> object:
         """Returns the converter used for the normalization of T-atoms"""
         return self._converter
 
-    def get_converted_atoms(self, atoms):
-        """Returns a list of normalized atoms"""
+    def get_converted_atoms(self, atoms: Iterable[FNode]) -> List[FNode]:
+        """Returns a list of normalized atoms
+        
+        Args:
+            atoms (Iterable[FNode]): a list of pysmt atoms
+            
+        Returns:
+            List[FNode]: a list of normalized atoms
+        """
         return [self._converter.convert(a) for a in atoms]

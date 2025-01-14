@@ -1,7 +1,7 @@
 """interface that all solvers must implement."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable
+from typing import Dict, Iterable, List
 
 from pysmt.fnode import FNode
 from theorydd.constants import SAT, UNSAT
@@ -15,6 +15,7 @@ class SMTEnumerator(ABC):
     """
 
     def __init__(self):
+        self._tlemmas = []
         pass
 
     @abstractmethod
@@ -23,7 +24,7 @@ class SMTEnumerator(ABC):
         pass
 
     @abstractmethod
-    def get_theory_lemmas(self) -> list:
+    def get_theory_lemmas(self) -> List[FNode]:
         """return the list of theory lemmas"""
         pass
 
@@ -33,7 +34,7 @@ class SMTEnumerator(ABC):
         pass
 
     @abstractmethod
-    def get_models(self) -> Iterable:
+    def get_models(self) -> List:
         """return the list of models"""
         pass
 
@@ -55,12 +56,18 @@ class SMTEnumerator(ABC):
 
         complessive_sat_result = SAT
 
+        all_lemmas = set()
+
         for partition in partitions:
             # compute true formula of partition
             partition_phi = get_true_given_atoms(partition)
 
             # check if partition is SAT and extract lemmas
             partition_sat_result = self.check_all_sat(partition_phi)
+
+            # add lemmas to the set of all lemmas
+            for lemma in self.get_theory_lemmas():
+                all_lemmas.add(lemma)
 
             # if partition is UNSAT, the whole formula is UNSAT
             # therefore mark result as UNSAT
@@ -73,5 +80,8 @@ class SMTEnumerator(ABC):
                 # should I continue enumerating lemmas?
                 if stop_at_unsat:
                     return UNSAT
+        
+        # store all lemmas
+        self._tlemmas = list(all_lemmas)
 
         return complessive_sat_result
