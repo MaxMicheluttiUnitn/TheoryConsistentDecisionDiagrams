@@ -14,7 +14,7 @@ This is the documentation for the **theorydd** python package.
 #
 
 ## Overview
-
+#
 This package allows you to compile SMT formulas into Decision Diagrams and dDNNF equivalent formulas. <br>
 This package was developed for **python version 3.10**, compatibility with different versions of python is not guaranteed. <br>
 This package also expects to be used in a Linux environment, therefore compatibility with any other OS is not guaranteed: this package is currently **Linux only**. <br>
@@ -22,7 +22,7 @@ Currently, this package allows compilation into **BDD**s, **SDD**s and **d-DNNF*
 A limitation of this package is that the **[pysmt](https://pypi.org/project/PySMT/)** package is used for managing SMT formulas, which means that this package is only compatible with SMT formulas that are supported by pysmt.
 
 ## Installing
-
+#
 This package uses some dependencies that require cython compilation before being ready to use. This makes the installation process slightly harder than simply installing the package through a pip one-liner. <br>
 To install the package, first install the **dd** dependency as follows:
 
@@ -61,7 +61,7 @@ Now the installation process should be complete, and you can check that everythi
 If this command does not raise any error, than the package is ready for use.
 
 ### Installing binaries
-
+#
 Some modules of this package require a binary to be executed to work correctly. These binaries do not come with the package at installation time and must be installed by the user. <br> 
 To facilitate this operation, this package comes with a command **theorydd_install** which allows for easy installing of the required binaries. <br>
 The **theorydd_install** command takes 3 optional arguments:
@@ -96,11 +96,11 @@ Remember to grant execution privileges (_chmod +x_) to the binaries before using
 ```
 
 ## Constants
-
+#
 All **constants** for this package are defined inside the _constants.py_ module.
 
 ## SMT Enumerators
-
+#
 SMTEnumerators are classes that inherit from the abstract class **SMTEnumerator** and override all the abstract methods defined into it. These classes are defined [here](../src/theorydd/solvers/).<br>
 Furthermore, a module _[lemma extractor](#lemma-extractor)_ containing some useful functions for enumeration is also defined there. <br>
 Available classes and modules:
@@ -113,7 +113,7 @@ Available classes and modules:
 - **[Lemma Extractor](#lemma-extractor)**<br>
 
 ### SMTEnumerator
-
+#
 Defined in the _[solver.py](../src/theorydd/solvers/solver.py)_ module. <br>
 By extending this interface and implementing all its abstract methods, it is possible to define custom SMTEnumerators that are compatible with the rest of the package.<br>
 
@@ -195,19 +195,19 @@ Method description: <br>
 #
 
 ### MathSATTotalEnumerator
-
+#
 Defined in the _[mathsat_total.py](../src/theorydd/solvers/mathsat_total.py)_ module. <br>
 The **MathSATTotalEnumerator** is an implementation of [SMTEnumerator](#smtenumerator) which always enumerates **total truth assignments** through the [MathSAT](https://mathsat.fbk.eu/) SMT solver. <br>
 This enumerator allows enumeration over a **boolean mapping** of the atoms. <br>
 
 ### MathSATPartialEnumerator
-
+#
 Defined in the _[mathsat_partial.py](../src/theorydd/solvers/mathsat_partial.py)_ module. <br>
 The **MathSATPartialEnumerator** is an implementation of [SMTEnumerator](#smtenumerator) which always enumerates **partial truth assignments** through the [MathSAT](https://mathsat.fbk.eu/) SMT solver. <br>
 This enumerator **never** enumerates over a **boolean mapping** of the atoms. <br>
 
 ### MathSATExtendedPartialEnumerator
-
+#
 Defined in the _[mathsat_partial_extended.py](../src/theorydd/solvers/mathsat_partial_extended.py)_ module. <br>
 The **MathSATExtendedPartialEnumerator** is an implementation of [SMTEnumerator](#smtenumerator) which always enumerates **totaltruth assignments** through the [MathSAT](https://mathsat.fbk.eu/) SMT solver. <br> 
 The enumeration is computed as follows:
@@ -218,7 +218,7 @@ calls** to the solver
 This enumerator **never** enumerates over a **boolean mapping** of the atoms. <br>
 
 ### TabularSMTSolver
-
+#
 Defined in the _[tabular.py](../src/theorydd/solvers/mathsat_partial.py)_ module. <br>
 The **TabularSMTSolver** is an implementation of [SMTEnumerator](#smtenumerator) which can both enumerate **partial and total truth assignments** through the [tabularAllSMT](https://github.com/giuspek/tabularAllSMT) SMT solver. <br>
 This enumerator **never** enumerates over a **boolean mapping** of the atoms. <br>
@@ -226,17 +226,17 @@ The constructor for this SMTsolver has an optional parameter **_is_partial_** wh
 If this parameter is set to _True_, than the instance of **TabularSMTSolver** will enumerate **partial truth assignments**, while it will enumerate **total truth assignments** otherwise.
 
 ### TabularTotalSMTSolver
-
+#
 Defined in the _[tabular.py](../src/theorydd/solvers/mathsat_partial.py)_ module. <br>
 A wrapper for the **TabularSMTSolver** which always enumerates **total truth assignments**.
 
 ### TabularPartialSMTSolver
-
+#
 Defined in the _[tabular.py](../src/theorydd/solvers/mathsat_partial.py)_ module. <br>
 A wrapper for the **TabularSMTSolver** which always enumerates **partial truth assignments**.
 
 ### Lemma Extractor
-
+#
 Defined in the _[lemma_extractor.py](../src/theorydd/solvers/lemma_extractor.py)_ module are these 2 functions: <br>
 - **[extract()](#extract)** <br>
 - **[find_qvars()](#find_qvars)** <br>
@@ -296,17 +296,17 @@ Method description:
 #
 
 ## Theory Decision Diagrams
-
+#
 The submodule **tdd** contains all compilers that **require computation of AllSMT** for compilation into the target language.
 
 ## Abstract Decision Diagrams
-
+#
 The submodule **abstractdd** contains all compilers that **do not require computation of AllSMT** for compilation into the target language.
 
 ## d-DNNF
-
+#
 d-DNNF compilers
 
 ## Utility
-
+#
 General utility
