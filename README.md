@@ -125,6 +125,10 @@ def dump(self, filename, roots=None,
                     f=filename))
 ``` -->
 
+## Documentation
+
+Documentation for this package is available [here](/docs/doc.md).
+
 License
 -------
 
