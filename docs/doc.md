@@ -466,13 +466,13 @@ Method description:
 #### _build()
 Args:
 - _self_
-- _phi_ <br>
+- _phi_: <br>
     **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula that has to be encoded in the _T-DD_
-- _tlemmas_ <br>
+- _tlemmas_: <br>
     **TYPE**: _List[FNode]_ <br>
     **DESCRIPTION**: the list of the theory lemmas of _phi_
-- _walker_ <br>
+- _walker_: <br>
     **TYPE**: _DagWalker_ <br>
     **DESCRIPTION**: a walker that walks over _phi_ in order to call the correct apply function of the _T-DD_
 - _computation_logger_: <br>
@@ -488,7 +488,7 @@ Method description:
 #### _build_unsat()
 Args:
 - _self_
-- _walker_ <br>
+- _walker_: <br>
     **TYPE**: _DagWalker_ <br>
     **DESCRIPTION**: a walker that walks over an FNode in order to call the correct apply function of the _T-DD_
 - _computation_logger_: <br>
