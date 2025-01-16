@@ -10,9 +10,7 @@ from pysmt.fnode import FNode
 from theorydd import formula
 from theorydd.solvers.lemma_extractor import extract
 from theorydd.solvers.solver import SMTEnumerator
-from theorydd.util._string_generator import SequentialStringGenerator
-from theorydd.walkers.walker_bdd import BDDWalker
-from theorydd.walkers.walker_sdd import SDDWalker
+from theorydd.walkers.walker_bdd import DagWalker as DDWalker
 
 
 class TheoryDD(ABC):
@@ -45,9 +43,9 @@ class TheoryDD(ABC):
         smt_solver: SMTEnumerator,
         tlemmas: List[FNode] | None,
         load_lemmas: str | None,
-        sat_result: bool,
+        sat_result: bool | None,
         computation_logger: Dict,
-    ) -> Tuple[List[FNode], bool]:
+    ) -> Tuple[List[FNode], bool | None]:
         """loads the lemmas"""
         # LOADING LEMMAS
         start_time = time.time()
@@ -78,7 +76,7 @@ class TheoryDD(ABC):
         return tlemmas, sat_result
 
     def _build_unsat(
-        self, walker: BDDWalker | SDDWalker, computation_logger: Dict
+        self, walker: DDWalker, computation_logger: Dict
     ) -> object:
         """builds the T-DD for an UNSAT formula
 
@@ -95,7 +93,7 @@ class TheoryDD(ABC):
         self,
         phi: FNode,
         tlemmas: List[FNode],
-        walker: BDDWalker,
+        walker: DDWalker,
         computation_logger: Dict,
     ) -> None:
         """Builds the T-DD"""
