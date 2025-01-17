@@ -43,7 +43,11 @@ def get_string_from_atom(atom: FNode) -> str:
 
 
 def cudd_load(file_name: str, bdd: cudd_bdd.BDD) -> cudd_bdd.Function:
-    """Unpickle variable order and load dddmp file.
+    """
+    Modified version of the load function
+    from dd.cudd.pyx
+    
+    Unpickle variable order and load dddmp file.
 
     Loads the variable order,
     reorders `bdd` to match that order,
