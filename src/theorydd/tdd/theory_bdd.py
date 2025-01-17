@@ -357,7 +357,7 @@ class TheoryBDD(TheoryDD):
         # SAVE DD
         _cudd_dump(self.root, f"{folder_path}/tbdd_data")
 
-    def _load_from_folder(self, folder_path: str) -> None:
+    def _load_from_folder(self, folder_path: str, normalization_solver: SMTEnumerator | None = None) -> None:
         """Load a T-BDD from a folder
 
         Args:
@@ -367,9 +367,14 @@ class TheoryBDD(TheoryDD):
             raise FileNotFoundError(
                 f"Folder {folder_path} does not exist, cannot load T-BDD"
             )
-        self.abstraction = formula.load_abstraction_function(
+        if normalization_solver is None:
+            normalization_solver = _get_solver("total")
+        abstraction = formula.load_abstraction_function(
             f"{folder_path}/abstraction.json"
         )
+        self.abstraction = {}
+        for k,v in abstraction.items():
+            self.abstraction[formula.get_normalized(k,normalization_solver.get_converter())] = v
         self.refinement = {v: k for k, v in self.abstraction.items()}
         self.bdd = cudd_bdd.BDD()
         self.root, ordering_dict = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
