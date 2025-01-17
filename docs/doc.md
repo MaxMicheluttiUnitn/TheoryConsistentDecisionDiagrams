@@ -129,10 +129,10 @@ The abstract methods are:
 Args:
 - _self_
 - _phi_: <br> 
-    **TYPE**: _FNode_ <br>
+    **TYPE**: _FNode_: <br>
     **DESCRIPTION**: the formula over which the solver must compute enumeration
 - _boolean_mapping_: <br>
-    **TYPE**: _Dict[FNode,FNode]_ _|_ _None_ <br>
+    **TYPE**: _Dict[FNode,FNode]_ _|_ _None_: <br>
     **DEFAULT VALUE**: _None_
     **DESCRIPTION**: a mapping that associates to each fresh boolean variable (keys) a atom that appears in _phi_ (values). When a solver is provided a boolean mapping it will enumerate over the fresh boolean variables instead of the original atoms. Some enumerators may ignore this argument.
 
@@ -183,7 +183,7 @@ The SMTEnumerator interface also implements a non-abstract method which is inher
 Args:
 - _self_
 - _phi_: <br> 
-    **TYPE**: _FNode_ <br>
+    **TYPE**: _FNode_: <br>
     **DESCRIPTION**: the formula over which the solver must compute enumeration
 
 Returns:
@@ -245,22 +245,22 @@ Defined in the _[lemma_extractor.py](../src/theorydd/solvers/lemma_extractor.py)
 #### extract()
 Args:
 - _phi_: <br> 
-    **TYPE**: _FNode_ <br>
+    **TYPE**: _FNode_: <br>
     **DESCRIPTION**: the formula from which to extract theory lemmas
 - _smt_solver_: <br> 
-    **TYPE**: _SMTEnumerator_ <br>
+    **TYPE**: _SMTEnumerator_: <br>
     **DESCRIPTION**: the _SMTEnumerator_ on which _check_all_sat_ will be called in order to extract theory lemmas
 - _enumerate_true: <br>
-    **TYPE**: _bool_ <br>
-    **DEFAULT VALUE**: _False_ <br>
+    **TYPE**: _bool_: <br>
+    **DEFAULT VALUE**: _False_: <br>
     **DESCRIPTION**: if set to _True_, _enumerate_true_ will be called on _smt_solver_ instead of _check_all_sat_
 - _use_boolean_mapping_: <br>
-    **TYPE**: _bool_ <br>
-    **DEFAULT VALUE**: _True_ <br>
+    **TYPE**: _bool_: <br>
+    **DEFAULT VALUE**: _True_: <br>
     **DESCRIPTION**: if set to _True_, the solver that extracts lemmas for _phi_ will be provided with a boolean mapping
 - _computation_logger_: <br>
-    **TYPE**: _Dict | None_ <br>
-    **DEFAULT VALUE**: _None_ <br>
+    **TYPE**: _Dict | None_: <br>
+    **DEFAULT VALUE**: _None_: <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns (Tuple):
@@ -283,8 +283,8 @@ Args:
     **TYPE**: _FNode_<br>
     **DESCRIPTION**: the formula after the conjunction with the theory lemmas
 - _computation_logger_: <br>
-    **TYPE**: _Dict | None_ <br>
-    **DEFAULT VALUE**: _None_ <br>
+    **TYPE**: _Dict | None_: <br>
+    **DEFAULT VALUE**: _None_: <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns:
@@ -315,15 +315,15 @@ The [_theory_dd_](../src/theorydd/tdd/theory_dd.py) abstract class requires impl
 #### _enumerate_qvars()
 Args:
 - _self_
-- _tlemmas_dd_ <br>
+- _tlemmas_dd_: <br>
 **TYPE**: _object_
 **DESCRIPTION**: the _T-DD_ built from the big and of the theory lemmas
 - _mapped_qvars_: <br>
-**TYPE**: _List[object]_ <br>
+**TYPE**: _List[object]_: <br>
 **DESCRIPTION**: a list of all the labels over which to enumerate
 
 Returns:
-- _object_ <br>
+- _object_: <br>
 **DESCRIPTION**: the root of the _tlemma_dd_ enumerated over the quantified variables
 
 Method description:
@@ -333,7 +333,7 @@ Method description:
 Args:
 - _self_
 - _folder_path_: <br>
-**TYPE**: _str_ <br>
+**TYPE**: _str_: <br>
 **DESCRIPTION**: the path to the folder where the _T-DD_ is stored. Notice that different _T-DDs_ may have different formats for serialization. 
 
 Method Description:
@@ -342,8 +342,8 @@ Method Description:
 #### save_to_folder()
 Args:
 - _self_
-- _folder_path_ <br>
-**TYPE**: _str_ <br>
+- _folder_path_: <br>
+**TYPE**: _str_: <br>
 **DESCRIPTION**: the path to the folder where the _T-DD_ must be stored
 
 Method description:
@@ -415,14 +415,14 @@ The [_theory_dd_](../src/theorydd/tdd/theory_dd.py) class also implemnts some us
 #### _normalize_input()
 Args:
 - _self_
-- _phi_ <br>
-    **TYPE**: _FNode_ <br>
+- _phi_: <br>
+    **TYPE**: _FNode_: <br>
     **DESCRIPTION**: the formula that has to be encoded into a _T-DD_
-- _solver_ <br>
-    **TYPE**: _SMTEnumerator_ <br>
+- _solver_: <br>
+    **TYPE**: _SMTEnumerator_: <br>
     **DESCRIPTION**: an _SMTEnumerator_ that is only used for normalization
 - _computation_logger_: <br>
-    **TYPE**: _Dict_ <br>
+    **TYPE**: _Dict_: <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns:
@@ -435,23 +435,23 @@ Method description:
 #### _load_lemmas()
 Args:
 - _self_
-- _phi_ <br>
-    **TYPE**: _FNode_ <br>
+- _phi_: <br>
+    **TYPE**: _FNode_: <br>
     **DESCRIPTION**: the formula that has to be encoded into a _T-DD_
-- _smt_solver_ <br>
-    **TYPE**: _SMTEnumerator_ <br>
+- _smt_solver_: <br>
+    **TYPE**: _SMTEnumerator_: <br>
     **DESCRIPTION**: an _SMTEnumerator_ that is used for normalization of the theory lemmas and theory lemma extraction if necessary
-- _tlemmas_ <br>
+- _tlemmas_: <br>
     **TYPE**: _List[FNode] | None_
     **DESCRIPTION**: the theory lemmas of _phi_, or _None_ if the theory lemmas are not available in memory yet
-- _load_lemmas_ <br>
-    **TYPE**: _str | None_ <br>
+- _load_lemmas_: <br>
+    **TYPE**: _str | None_: <br>
     **DESCRIPTION**: the path to a .smt2 file where the theory lemmas are stored, _None_ if such a file is not available
-- _sat_result_ <br>
-    **TYPE**: _bool | None_ <br>
+- _sat_result_: <br>
+    **TYPE**: _bool | None_: <br>
     **DESCRIPTION**: the T-satisfiability of _phi_ if known, _None_ otherwise
 - _computation_logger_: <br>
-    **TYPE**: _Dict_ <br>
+    **TYPE**: _Dict_: <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns:
@@ -467,16 +467,16 @@ Method description:
 Args:
 - _self_
 - _phi_: <br>
-    **TYPE**: _FNode_ <br>
+    **TYPE**: _FNode_: <br>
     **DESCRIPTION**: the formula that has to be encoded in the _T-DD_
 - _tlemmas_: <br>
-    **TYPE**: _List[FNode]_ <br>
+    **TYPE**: _List[FNode]_: <br>
     **DESCRIPTION**: the list of the theory lemmas of _phi_
 - _walker_: <br>
-    **TYPE**: _DagWalker_ <br>
+    **TYPE**: _DagWalker_: <br>
     **DESCRIPTION**: a walker that walks over _phi_ in order to call the correct apply function of the _T-DD_
 - _computation_logger_: <br>
-    **TYPE**: _Dict_ <br>
+    **TYPE**: _Dict_: <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 Returns:
 - _object_:
@@ -489,10 +489,10 @@ Method description:
 Args:
 - _self_
 - _walker_: <br>
-    **TYPE**: _DagWalker_ <br>
+    **TYPE**: _DagWalker_: <br>
     **DESCRIPTION**: a walker that walks over an FNode in order to call the correct apply function of the _T-DD_
 - _computation_logger_: <br>
-    **TYPE**: _Dict_ <br>
+    **TYPE**: _Dict_: <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 Returns:
 - _object_:
