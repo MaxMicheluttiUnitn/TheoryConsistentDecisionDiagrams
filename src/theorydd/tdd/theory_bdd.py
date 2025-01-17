@@ -73,7 +73,9 @@ class TheoryBDD(TheoryDD):
         super().__init__()
         self.logger = logging.getLogger("theorydd_bdd")
         if folder_name is not None:
-            self._load_from_folder(folder_name)
+            if not isinstance(solver, SMTEnumerator):
+                solver = None
+            self._load_from_folder(folder_name, normalization_solver=solver)
             return
         if computation_logger is None:
             computation_logger = {}

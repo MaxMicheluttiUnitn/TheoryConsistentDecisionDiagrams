@@ -78,7 +78,9 @@ class TheorySDD(TheoryDD):
         self.logger = logging.getLogger("theorydd_tsdd")
 
         if folder_name is not None:
-            self._load_from_folder(folder_name)
+            if not isinstance(solver, SMTEnumerator):
+                solver = None
+            self._load_from_folder(folder_name, normalization_solver=solver)
             return
         if vtree_type not in VALID_VTREE:
             raise InvalidVTreeException(
