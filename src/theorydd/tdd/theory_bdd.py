@@ -107,6 +107,8 @@ class TheoryBDD(TheoryDD):
             computation_logger=computation_logger["T-BDD"],
         )
 
+        # THESE ATOMS SHOULD ALREADY BE NORMALIZED
+        # SINCE THEY COME FROM A NORMALIZED FORMULA
         atoms = get_atoms(phi_and_lemmas)
 
         # CREATING VARIABLE MAPPING
@@ -120,6 +122,10 @@ class TheoryBDD(TheoryDD):
         if use_ordering is not None:
             # define ordering with the provided ordering after the qvars
             # to make existential quantification more efficient
+            use_ordering = [
+                formula.get_normalized(atom, smt_solver.get_converter())
+                for atom in use_ordering
+            ]
             self.ordering = self._complete_ordering(atoms, use_ordering)
         else:
             self.ordering = self._compute_ordering(atoms)
@@ -159,8 +165,10 @@ class TheoryBDD(TheoryDD):
             if not atom in appended_values:
                 order.append(atom)
         return order
-    
-    def _complete_ordering(self, atoms: List[FNode], use_ordering: List[FNode]) -> List[FNode]:
+
+    def _complete_ordering(
+        self, atoms: List[FNode], use_ordering: List[FNode]
+    ) -> List[FNode]:
         """completes the ordering provided by the user"""
         remaining_items = set(atoms)
         order = []
@@ -257,15 +265,15 @@ class TheoryBDD(TheoryDD):
         """Returns the variable mapping used,
         which defines the abstraction function"""
         return self.get_abstraction()
-    
+
     def get_abstraction(self) -> Dict[FNode, str]:
         """Returns the abstraction function"""
         return self.abstraction
-    
+
     def get_refinement(self) -> Dict[str, FNode]:
         """Returns the refinement function"""
         return self.refinement
-    
+
     def get_ordering(self) -> List[FNode]:
         """Returns the ordering of the variables"""
         return self.ordering
@@ -366,7 +374,7 @@ class TheoryBDD(TheoryDD):
         self.bdd = cudd_bdd.BDD()
         self.root, ordering_dict = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
         self.ordering = [0] * len(ordering_dict)
-        for k,v in ordering_dict.items():
+        for k, v in ordering_dict.items():
             self.ordering[v] = self.refinement[k]
         # load qvars
         with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
