@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from typing import Dict, List, Set
+from copy import deepcopy as _deepcopy
 from collections.abc import Iterator
 from pysmt.fnode import FNode
 from pysdd.sdd import SddManager, Vtree, SddNode, WmcManager
@@ -34,18 +35,20 @@ class TheorySDD(TheoryDD):
     abstraction: Dict[FNode, int]
     refinement: Dict[int, FNode]
     vtree: Vtree
-    atom_literal_map: Dict  # Dict[FNode, SddLiteral]
+    atom_literal_map: Dict[FNode, object]  # Dict[FNode, SddLiteral]
 
     def __init__(
         self,
         phi: FNode,
         solver: str | SMTEnumerator = "total",
-        computation_logger: Dict = None,
+        tlemmas: List[FNode] = None,
         load_lemmas: str | None = None,
         sat_result: bool | None = None,
-        tlemmas: List[FNode] = None,
         vtree_type: str = "balanced",
+        use_vtree: Vtree | None = None,
+        use_abstraction: Dict[FNode, int] | None = None,
         folder_name: str | None = None,
+        computation_logger: Dict = None,
     ) -> None:
         """Builds a T-SDD. The construction requires the
         computation of All-SMT for the provided formula to
@@ -56,16 +59,20 @@ class TheorySDD(TheoryDD):
             phi (FNode) : a pysmt formula
             solver (str | SMTEnumerator) ["partial"]: specifies which solver to use for All-SMT computation.
                 Valid solvers are "total", "partial" and "extended_partial", or you can pass an instance of a SMTEnumerator
-            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
-                This skips the All-SMT computation
             tlemmas (List[Fnode]): use previously computed tlemmas.
                 This skips the All-SMT computation
+            load_lemmas (str) [None]: specify the path to a file from which to load the tlemmas.
+                This skips the All-SMT computation
+            sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
             vtree_type (str) ["balanced"]: used for Vtree generation.
                 Available values in theorydd.constants.VALID_VTREE
-            sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!ù
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
+            use_vtree (Vtree) [None]: use a precomputed Vtree for canonicity
+            use_abstraction (Dict[FNode,int]) [None]: use a precomputed abstraction function,
+                this is useful when you want to reuse the same abstraction function and allows for
+                the correct use of the Vtree provided in use_vtree
             folder_name (str | None) [None]: the path to a folder where data to load the T-SDD is stored.
                 If this is not None, then all other parameters are ignored
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
         super().__init__()
         self.logger = logging.getLogger("theorydd_tsdd")
@@ -116,11 +123,23 @@ class TheorySDD(TheoryDD):
         atoms = get_atoms(phi_and_lemmas)
 
         # CREATING VARIABLE MAPPING
-        self.abstraction = self._compute_mapping(atoms, computation_logger["T-SDD"])
+        if use_abstraction is not None:
+            self.abstraction = _deepcopy(use_abstraction)
+            # extend old abstraction with new atoms
+            for qvar in self.qvars:
+                old_len = len(self.abstraction)
+                self.abstraction[qvar] = old_len + 1
+        else:
+            self.abstraction = self._compute_mapping(atoms, computation_logger["T-SDD"])
         self.refinement = {v: k for k, v in self.abstraction.items()}
 
         # BUILDING V-TREE
-        self._build_vtree(vtree_type, computation_logger["T-SDD"])
+        if use_vtree is not None and use_abstraction is not None:
+            # if the abstraction is not provided,
+            # then the vtree is useless
+            self.vtree = use_vtree
+        else:
+            self._build_vtree(vtree_type, computation_logger["T-SDD"])
 
         # BUILDING SDD WITH WALKER
         start_time = time.time()
@@ -166,7 +185,7 @@ class TheorySDD(TheoryDD):
         computation_logger["variable mapping creation time"] = elapsed_time
         return mapping
 
-    def _enumerate_qvars(self, tlemmas_dd, mapped_qvars) -> object:
+    def _enumerate_qvars(self, tlemmas_dd: SddNode, mapped_qvars: object) -> object:
         """Enumerates over the fresh T-atoms in the T-lemmas"""
         existential_map = [0]
         for smt_atom in self.atom_literal_map.keys():
@@ -304,11 +323,19 @@ class TheorySDD(TheoryDD):
                 output_file,
             )
 
-    def get_mapping(self) -> Dict:
+    def get_mapping(self) -> Dict[FNode, int]:
         """Returns the variable mapping used"""
+        return self.get_abstraction()
+
+    def get_refinement(self) -> Dict[int, FNode]:
+        """Returns the refinement mapping used"""
+        return self.refinement
+
+    def get_abstraction(self) -> Dict[FNode, int]:
+        """Returns the abstraction mapping used"""
         return self.abstraction
-    
-    def _refine_model(self, model: Dict[int,int]) -> Dict[FNode, bool]:
+
+    def _refine_model(self, model: Dict[int, int]) -> Dict[FNode, bool]:
         """Refines a model from the SDD to the original formula"""
         refined_model = {}
         for key, value in model.items():
@@ -327,7 +354,7 @@ class TheorySDD(TheoryDD):
             return None
         for mod in self.root.models():
             return self._refine_model(mod)
-        
+
     def pick_all_iter(self) -> Iterator[Dict[FNode, bool]]:
         """Returns an iterator over the models of the encoded formula"""
         for mod in self.root.models():
@@ -398,6 +425,10 @@ class TheorySDD(TheoryDD):
             qvars_indexes = json.load(input_data)
             self.qvars = [self.refinement[qvar_id] for qvar_id in qvars_indexes]
 
+    def get_vtree(self) -> Vtree:
+        """Returns the V-Tree"""
+        return self.vtree
+
 
 def vtree_load_from_folder(folder_path: str) -> Vtree:
     """Load a V-Tree from the specified folder
@@ -417,9 +448,3 @@ def tsdd_load_from_folder(folder_path: str) -> TheorySDD:
         folder_path (str): the path to the folder containing the T-SDD
     """
     return TheorySDD(None, folder_name=folder_path)
-
-if __name__ == "__main__":
-    from theorydd.formula import default_phi
-    phi = default_phi()
-    tsdd = TheorySDD(phi)
-    tsdd.pick_all()

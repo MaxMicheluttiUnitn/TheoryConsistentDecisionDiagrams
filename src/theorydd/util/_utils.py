@@ -1,6 +1,7 @@
 """utility functions module"""
 
 import pickle
+from collections.abc import Iterable
 from pysmt.fnode import FNode
 from dd import cudd as cudd_bdd
 from theorydd.constants import VALID_SOLVER
@@ -70,7 +71,10 @@ def cudd_load(file_name: str, bdd: cudd_bdd.BDD) -> cudd_bdd.Function:
     cfg = bdd.configure(reordering=False)
     u = bdd.load(dddmp_fname)
     bdd.configure(reordering=cfg["reordering"])
-    return u[0]
+    #print(order)
+    if isinstance(u, Iterable):
+        return u[0], order
+    return u, order
 
 
 def cudd_dump(root: object, file_name: str) -> None:

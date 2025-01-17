@@ -38,16 +38,18 @@ class TheoryBDD(TheoryDD):
     abstraction: Dict[FNode, str]
     refinement: Dict[str, FNode]
     logger: logging.Logger
+    ordering: List[FNode]
 
     def __init__(
         self,
         phi: FNode,
         solver: str | SMTEnumerator = "total",
-        load_lemmas: str | None = None,
         tlemmas: List[FNode] = None,
+        load_lemmas: str | None = None,
         sat_result: bool | None = None,
-        computation_logger: Dict = None,
+        use_ordering: List[FNode] | None = None,
         folder_name: str | None = None,
+        computation_logger: Dict = None,
     ) -> None:
         """Builds a T-BDD. The construction requires the
         computation of All-SMT for the provided formula to
@@ -58,14 +60,15 @@ class TheoryBDD(TheoryDD):
             phi (FNode) : a pysmt formula
             solver (str | SMTEnumerator) ["total"]: specifies which solver to use for All-SMT computation.
                 Valid solvers are "partial", "total" and "extended_partial", or you can pass an instance of a SMTEnumerator
-            load_lemmas (str) [None]: specify the path to a file from which to load phi & lemmas.
+            tlemmas (List[Fnode] | None): use previously computed tlemmas.
                 This skips the All-SMT computation
-            tlemmas (List[Fnode]): use previously computed tlemmas.
+            load_lemmas (str | None) [None]: specify the path to a file from which to load phi & lemmas.
                 This skips the All-SMT computation
-            sat_result (bool) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info.
+            sat_result (bool | None) [None]: the result of the All-SMT computation. This value is overwritten if t-lemmas are not provided!!!
+            use_ordering (List[FNode] | None) [None]: the ordering of the variables in the BDD.
             folder_name (str | None) [None]: the path to a folder where data to load the T-BDD is stored.
                 If this is not None, then all other parameters are ignored
+            computation_logger (Dict | None) [None]: a dictionary that will be updated to store computation info.
         """
         super().__init__()
         self.logger = logging.getLogger("theorydd_bdd")
@@ -113,19 +116,23 @@ class TheoryBDD(TheoryDD):
         # PREPARE FOR BUILDING
         start_time = time.time()
         self.logger.info("starting T-BDD preparation phase...")
+        # compute the ordering
+        if use_ordering is not None:
+            # define ordering with the provided ordering after the qvars
+            # to make existential quantification more efficient
+            self.ordering = self._complete_ordering(atoms, use_ordering)
+        else:
+            self.ordering = self._compute_ordering(atoms)
+        # declare all variables
         self.bdd = cudd_bdd.BDD()
-        appended_values = set()
-        all_values = [self.abstraction[atom] for atom in self.qvars]
-        for atom in self.qvars:
-            appended_values.add(self.abstraction[atom])
-        for value in self.abstraction.values():
-            if not value in appended_values:
-                all_values.append(value)
-        self.bdd.declare(*all_values)
+        ordering_abstraction = [self.abstraction[atom] for atom in self.ordering]
+        self.bdd.declare(*ordering_abstraction)
+        # set the correct ordering
         bdd_ordering = {}
-        for i, item in enumerate(all_values):
+        for i, item in enumerate(ordering_abstraction):
             bdd_ordering[item] = i
         cudd_bdd.reorder(self.bdd, bdd_ordering)
+        # build walker
         walker = BDDWalker(self.abstraction, self.bdd)
         elapsed_time = time.time() - start_time
         self.logger.info(
@@ -137,6 +144,38 @@ class TheoryBDD(TheoryDD):
             self.root = self._build(phi, tlemmas, walker, computation_logger["T-BDD"])
         else:
             self.root = self._build_unsat(walker, computation_logger["T-BDD"])
+
+    def _compute_ordering(self, atoms: List[FNode]) -> List[FNode]:
+        """computes the ordering of the variables
+
+        Args:
+            atoms (List[FNode]): the atoms of phi & tlemmas"""
+        appended_values = set()
+        order = []
+        for atom in self.qvars:
+            appended_values.add(atom)
+            order.append(atom)
+        for atom in atoms:
+            if not atom in appended_values:
+                order.append(atom)
+        return order
+    
+    def _complete_ordering(self, atoms: List[FNode], use_ordering: List[FNode]) -> List[FNode]:
+        """completes the ordering provided by the user"""
+        remaining_items = set(atoms)
+        order = []
+        # put qvars at the front
+        for qvar in self.qvars:
+            order.append(qvar)
+            remaining_items.remove(qvar)
+        # put requested order in the middle
+        for item in use_ordering:
+            order.append(item)
+            remaining_items.remove(item)
+        # put remaining items at the end
+        for item in remaining_items:
+            order.append(item)
+        return order
 
     def _compute_mapping(
         self, atoms: List[FNode], computation_logger: dict
@@ -217,7 +256,19 @@ class TheoryBDD(TheoryDD):
     def get_mapping(self) -> Dict[FNode, str]:
         """Returns the variable mapping used,
         which defines the abstraction function"""
+        return self.get_abstraction()
+    
+    def get_abstraction(self) -> Dict[FNode, str]:
+        """Returns the abstraction function"""
         return self.abstraction
+    
+    def get_refinement(self) -> Dict[str, FNode]:
+        """Returns the refinement function"""
+        return self.refinement
+    
+    def get_ordering(self) -> List[FNode]:
+        """Returns the ordering of the variables"""
+        return self.ordering
 
     def is_sat(self) -> bool:
         """Returns True if the encoded formula is satisfiable"""
@@ -254,7 +305,7 @@ class TheoryBDD(TheoryDD):
         care_vars = self._get_care_vars()
         items = list(self.bdd.pick_iter(self.root, care_vars))
         return [self._convert_assignment(i) for i in items]
-    
+
     def pick_all_iter(self) -> Iterator[Dict[FNode, bool]]:
         """Returns all partial models of the encoded formula"""
         if not self.is_sat():
@@ -313,8 +364,10 @@ class TheoryBDD(TheoryDD):
         )
         self.refinement = {v: k for k, v in self.abstraction.items()}
         self.bdd = cudd_bdd.BDD()
-        self.bdd.declare(*self.abstraction.values())
-        self.root = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
+        self.root, ordering_dict = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
+        self.ordering = [0] * len(ordering_dict)
+        for k,v in ordering_dict.items():
+            self.ordering[v] = self.refinement[k]
         # load qvars
         with open(f"{folder_path}/qvars.qvars", "r", encoding="utf8") as input_data:
             qvars_indexes = json.load(input_data)
