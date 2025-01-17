@@ -401,19 +401,25 @@ class TheorySDD(TheoryDD):
             os.makedirs(folder_path)
         self.vtree.save(str.encode(folder_path + "/vtree.vtree"))
 
-    def _load_from_folder(self, folder_path: str) -> None:
+    def _load_from_folder(self, folder_path: str, normalization_solver: SMTEnumerator | None = None) -> None:
         """
         Load an AbstractionSDD from a folder
 
         Args:
             folder_path (str): the path to the folder where the data is stored
+            normalization_solver (SMTEnumerator) [None]: the solver to use for normalization
         """
         if not os.path.exists(folder_path):
             raise FileNotFoundError("The folder does not exist")
         self.vtree = vtree_load_from_folder(folder_path)
-        self.abstraction = formula.load_abstraction_function(
+        if normalization_solver is None:
+            normalization_solver = _get_solver("total")
+        abstraction = formula.load_abstraction_function(
             folder_path + "/abstraction.json"
         )
+        self.abstraction = {}
+        for key, value in abstraction.items():
+            self.abstraction[formula.get_normalized(key,normalization_solver.get_converter())] = value
         self.manager = SddManager.from_vtree(self.vtree)
         self.refinement = {v: k for k, v in self.abstraction.items()}
         sdd_literals = [

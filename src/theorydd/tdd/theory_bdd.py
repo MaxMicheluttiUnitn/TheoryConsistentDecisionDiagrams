@@ -362,6 +362,7 @@ class TheoryBDD(TheoryDD):
 
         Args:
             folder_path (str): the path to the folder where the data is stored
+            normalization_solver (SMTEnumerator | None) [None]: the solver to use for normalization
         """
         if not os.path.exists(folder_path):
             raise FileNotFoundError(
