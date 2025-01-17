@@ -390,13 +390,16 @@ class TheoryBDD(TheoryDD):
             self.qvars = [self.refinement[qvar_id] for qvar_id in qvars_indexes]
 
 
-def tbdd_load_from_folder(folder_path: str) -> TheoryBDD:
+def tbdd_load_from_folder(folder_path: str, normalizer_solver: SMTEnumerator | None = None) -> TheoryBDD:
     """Load a T-BDD from a file
 
     Args:
         file_path (str): the path to the file
+        normalizer_solver (SMTEnumerator | None) [None]: the solver to use for normalization
 
     Returns:
         TheoryBDD: the T-BDD loaded from the file
     """
-    return TheoryBDD(None, folder_name=folder_path)
+    if normalizer_solver is None:
+        normalizer_solver = _get_solver("total")
+    return TheoryBDD(None, folder_name=folder_path, solver=normalizer_solver)

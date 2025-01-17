@@ -449,10 +449,16 @@ def vtree_load_from_folder(folder_path: str) -> Vtree:
     return Vtree(filename=folder_path + "/vtree.vtree")
 
 
-def tsdd_load_from_folder(folder_path: str) -> TheorySDD:
+def tsdd_load_from_folder(folder_path: str, normalizer_solver: SMTEnumerator | None) -> TheorySDD:
     """Load a T-SDD from the specified folder
 
     Args:
         folder_path (str): the path to the folder containing the T-SDD
+        normalizer_solver (SMTEnumerator) [None]: the solver to use for normalization
+
+    Returns:
+        TheorySDD: the T-SDD loaded from the input folder
     """
-    return TheorySDD(None, folder_name=folder_path)
+    if normalizer_solver is None:
+        normalizer_solver = _get_solver("total")
+    return TheorySDD(None, folder_name=folder_path, solver=normalizer_solver)
