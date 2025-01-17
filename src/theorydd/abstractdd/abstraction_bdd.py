@@ -184,8 +184,8 @@ class AbstractionBDD(AbstractDD):
         """
         self.mapping = formula.load_abstraction_function(f"{folder_path}/abstraction.json")
         self.bdd = cudd_bdd.BDD()
-        self.bdd.declare(*self.mapping.values())
-        self.root = _cudd_load(f"{folder_path}/abstraction_bdd_data", self.bdd)
+        #self.bdd.declare(*self.mapping.values())
+        self.root, _order = _cudd_load(f"{folder_path}/abstraction_bdd_data", self.bdd)
 
 
 def abstraction_bdd_load_from_folder(folder_path: str) -> AbstractionBDD:

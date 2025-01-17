@@ -11,7 +11,6 @@ def test_abstraction_bdd_serialization():
     phi = formula.default_phi()
     original_dd = AbstractionBDD(phi)
     original_dd.save_to_folder("tests/test_data/abstraction_bdd")
-
     loaded_dd = abstraction_bdd_load_from_folder("tests/test_data/abstraction_bdd")
     assert len(original_dd) == len(loaded_dd), "Loaded BDD has different number of nodes"
     assert original_dd.count_models() == loaded_dd.count_models(), "Loaded BDD has different number of models"
