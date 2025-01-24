@@ -48,12 +48,12 @@ class C2DCompiler(DDNNFCompiler):
         dimacs_file: str,
         tlemmas: List[FNode] | None = None,
         sat_result: bool | None = None,
+        quantify_tseitsin: bool = False,
         quantification_file: str = "quantification.exist",
     ) -> None:
         """
         translates an SMT formula in DIMACS format and saves it on file.
         All fresh variables are saved inside quantification_file.
-        The mapping use to translate the formula is then returned.
 
         This function also resets the abstraction and refinement functions.
 
@@ -62,6 +62,7 @@ class C2DCompiler(DDNNFCompiler):
             dimacs_file (str) -> the path to the file where the dimacs output need to be saved
             tlemmas (List[FNode] | None) -> a list of theory lemmas to be added to the formula
             sat_result (bool | None) -> the result of the SAT check on the formula
+            quantify_tseitsin (bool) -> if True, the compiler will quantify over the tseitsin fresh variables
             quantification_file (str) -> the path to the file where the quantified variables
                 need to be saved
         """
@@ -75,7 +76,11 @@ class C2DCompiler(DDNNFCompiler):
         phi_cnf: FNode = LabelCNFizer().convert_as_formula(phi_and_lemmas)
         phi_atoms: frozenset = get_atoms(phi)
         phi_cnf_atoms: frozenset = get_atoms(phi_cnf)
-        fresh_atoms: List[FNode] = list(phi_cnf_atoms.difference(phi_atoms))
+        if quantify_tseitsin:
+            fresh_atoms: List[FNode] = list(phi_cnf_atoms.difference(phi_atoms))
+        else:
+            phi_and_lemmas_atoms: frozenset = get_atoms(phi_and_lemmas)
+            fresh_atoms: List[FNode] = list(phi_and_lemmas_atoms.difference(phi_atoms))
 
         count = 1
         self.abstraction = {}
@@ -223,8 +228,9 @@ class C2DCompiler(DDNNFCompiler):
         save_path: str | None = None,
         back_to_fnode: bool = False,
         sat_result: bool | None = None,
+        quantify_tseitsin: bool = False,
         computation_logger: Dict | None = None,
-        timeout: int = 3600
+        timeout: int = 3600,
     ) -> Tuple[FNode | None, int, int]:
         """
         Compiles an FNode in dDNNF through the c2d compiler
@@ -234,6 +240,8 @@ class C2DCompiler(DDNNFCompiler):
             tlemmas (List[FNode] | None) -> a list of theory lemmas to be added to the formula
             save_path (str | None) -> the path where the dDNNF will be saved
             back_to_fnode (bool) -> if True, the function returns the pysmt formula
+            sat_result (bool | None) -> the result of the SAT check on the formula
+            quantify_tseitsin (bool) -> if True, the compiler will quantify over the tseitsin fresh variables
             computation_logger (Dict | None) -> a dictionary to store the computation time
             timeout (int) -> the maximum time allowed for the computation
 
@@ -263,6 +271,7 @@ class C2DCompiler(DDNNFCompiler):
             f"{tmp_folder}/dimacs.cnf",
             tlemmas,
             sat_result=sat_result,
+            quantify_tseitsin=quantify_tseitsin,
             quantification_file=f"{tmp_folder}/quantification.exist"
         )
         elapsed_time = time.time() - start_time

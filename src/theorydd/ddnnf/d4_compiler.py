@@ -1,6 +1,5 @@
 """midddleware for pysmt-d4 compatibility"""
 
-
 import json
 import logging
 import os
@@ -17,7 +16,12 @@ from pysmt.shortcuts import (
 )
 from pysmt.fnode import FNode
 from allsat_cnf.label_cnfizer import LabelCNFizer
-from theorydd.formula import save_refinement, load_refinement, get_phi_and_lemmas, get_normalized
+from theorydd.formula import (
+    save_refinement,
+    load_refinement,
+    get_phi_and_lemmas,
+    get_normalized,
+)
 from theorydd.constants import (
     UNSAT,
     D4_COMMAND as _D4_COMMAND,
@@ -25,7 +29,7 @@ from theorydd.constants import (
     D4_OR_NODE as _D4_OR_NODE,
     D4_TRUE_NODE as _D4_TRUE_NODE,
     D4_FALSE_NODE as _D4_FALSE_NODE,
-    RE_NNF_EDGE as _RE_NNF_EDGE
+    RE_NNF_EDGE as _RE_NNF_EDGE,
 )
 from theorydd.solvers.mathsat_total import MathSATTotalEnumerator
 
@@ -36,6 +40,7 @@ _SelfD4Node = TypeVar("SelfD4Node", bound="D4Node")
 @dataclass
 class D4Node:
     """a node that results from a d4 compilation process"""
+
     node_type: int
     edges: Dict[int, List[int]]
     memo: None | FNode
@@ -44,10 +49,12 @@ class D4Node:
         # check if d4 is available and executable
         if not os.path.isfile(_D4_COMMAND):
             raise FileNotFoundError(
-                "The binary for the d4 compiler is missing. Please run \"theorydd_install --d4\" to install or install manually.")
+                'The binary for the d4 compiler is missing. Please run "theorydd_install --d4" to install or install manually.'
+            )
         if not os.access(_D4_COMMAND, os.X_OK):
             raise PermissionError(
-                "The d4 binary is not executable. Please check the permissions for the file and grant execution rights.")
+                "The d4 binary is not executable. Please check the permissions for the file and grant execution rights."
+            )
         super().__init__()
         self.node_type = node_type
         self.edges = {}
@@ -61,7 +68,9 @@ class D4Node:
         """adds an edge to the node"""
         self.edges[dst] = label
 
-    def to_pysmt(self, mapping: Dict[int, FNode], graph: Dict[int, _SelfD4Node]) -> FNode:
+    def to_pysmt(
+        self, mapping: Dict[int, FNode], graph: Dict[int, _SelfD4Node]
+    ) -> FNode:
         """
         translates the D4Node into a pysmt formula recirsively with memoization
 
@@ -120,7 +129,8 @@ class D4Compiler(DDNNFCompiler):
         phi: FNode,
         dimacs_file: str,
         tlemmas: List[FNode] | None = None,
-        sat_result: bool | None = None
+        sat_result: bool | None = None,
+        quantify_tseitsin: bool = False,
     ) -> None:
         """
         translates an SMT formula in DIMACS format and saves it on file.
@@ -132,17 +142,23 @@ class D4Compiler(DDNNFCompiler):
             dimacs_file (str) -> the path to the file where the dimacs output need to be saved
             tlemmas (List[FNode] | None) = None -> a list of theory lemmas to be added to the formula
             sat_result (bool | None) = None -> the result of the SAT check on the formula
+            quantify_tseitsin (bool) = False -> set it to True to quantify over the tseitsin variables
         """
         phi_atoms: frozenset = get_atoms(phi)
         if tlemmas is not None:
             phi_and_lemmas = get_phi_and_lemmas(phi, tlemmas)
         else:
             phi_and_lemmas = phi
-        phi_and_lemmas = get_normalized(phi_and_lemmas, self.normalizer_solver.get_converter())
+        phi_and_lemmas = get_normalized(
+            phi_and_lemmas, self.normalizer_solver.get_converter()
+        )
         phi_cnf: FNode = LabelCNFizer().convert_as_formula(phi_and_lemmas)
         phi_cnf_atoms: frozenset = get_atoms(phi_cnf)
-        fresh_atoms: Set[FNode] = frozenset(
-            phi_cnf_atoms.difference(phi_atoms))
+        if quantify_tseitsin:
+            phi_and_lemmas_atoms: frozenset = get_atoms(phi_and_lemmas)
+            fresh_atoms = frozenset(phi_and_lemmas_atoms.difference(phi_atoms))
+        else:
+            fresh_atoms: Set[FNode] = frozenset(phi_cnf_atoms.difference(phi_atoms))
         important_atoms_labels: List[int] = []
 
         # create mapping
@@ -189,40 +205,44 @@ class D4Compiler(DDNNFCompiler):
         total_arcs = 0
         d4_graph: Dict[int, D4Node] = {}
         for line in lines:
-            if line.startswith('o'):
+            if line.startswith("o"):
                 # OR NODE
                 total_nodes += 1
                 tokens = line.split(" ")
                 if len(tokens) != 3:
                     raise ValueError(
-                        "Invalid d4 format: OR node with wrong number of tokens")
+                        "Invalid d4 format: OR node with wrong number of tokens"
+                    )
                 node_id = int(tokens[1])
                 d4_graph[node_id] = D4Node(_D4_OR_NODE)
-            elif line.startswith('a'):
+            elif line.startswith("a"):
                 # AND NODE
                 total_nodes += 1
                 tokens = line.split(" ")
                 if len(tokens) != 3:
                     raise ValueError(
-                        "Invalid d4 format: AND node with wrong number of tokens")
+                        "Invalid d4 format: AND node with wrong number of tokens"
+                    )
                 node_id = int(tokens[1])
                 d4_graph[node_id] = D4Node(_D4_AND_NODE)
-            elif line.startswith('f'):
+            elif line.startswith("f"):
                 # FALSE NODE
                 total_nodes += 1
                 tokens = line.split(" ")
                 if len(tokens) != 3:
                     raise ValueError(
-                        "Invalid d4 format: FALSE node with wrong number of tokens")
+                        "Invalid d4 format: FALSE node with wrong number of tokens"
+                    )
                 node_id = int(tokens[1])
                 d4_graph[node_id] = D4Node(_D4_FALSE_NODE)
-            elif line.startswith('t'):
+            elif line.startswith("t"):
                 # TRUE NODE
                 total_nodes += 1
                 tokens = line.split(" ")
                 if len(tokens) != 3:
                     raise ValueError(
-                        "Invalid d4 format: TRUE node with wrong number of tokens")
+                        "Invalid d4 format: TRUE node with wrong number of tokens"
+                    )
                 node_id = int(tokens[1])
                 d4_graph[node_id] = D4Node(_D4_TRUE_NODE)
             elif line[0].isdigit():
@@ -231,7 +251,8 @@ class D4Compiler(DDNNFCompiler):
                 tokens = line.split(" ")
                 if len(tokens) < 3:
                     raise ValueError(
-                        "Invalid d4 format: ARC with insufficient amount of tokens")
+                        "Invalid d4 format: ARC with insufficient amount of tokens"
+                    )
                 src_id = int(tokens[0])  # source node
                 dst_id = int(tokens[1])  # destination node
                 label = list(map(int, tokens[2:]))
@@ -262,7 +283,12 @@ class D4Compiler(DDNNFCompiler):
         lines: List[str] = contents.split("\n")
         lines = list(filter(lambda x: x != "", lines))
         for line in lines:
-            if line.startswith('f') or line.startswith('o') or line.startswith('t') or line.startswith('a'):
+            if (
+                line.startswith("f")
+                or line.startswith("o")
+                or line.startswith("t")
+                or line.startswith("a")
+            ):
                 total_nodes += 1
             elif line[0].isdigit():
                 total_edges += 1
@@ -275,8 +301,9 @@ class D4Compiler(DDNNFCompiler):
         save_path: str | None = None,
         back_to_fnode: bool = False,
         sat_result: bool | None = None,
+        quantify_tseitsin: bool = False,
         computation_logger: Dict | None = None,
-        timeout: int = 3600
+        timeout: int = 3600,
     ) -> Tuple[FNode | None, int, int]:
         """
         Compiles an FNode in dDNNF through the d4 compiler
@@ -284,12 +311,15 @@ class D4Compiler(DDNNFCompiler):
         Args:
             phi (FNode) -> a pysmt formula
             tlemmas (List[FNode] | None) = None -> a list of theory lemmas to be added to the formula
-            save_path (str | None) = None -> the path where dDNNF data will be saved. 
+            save_path (str | None) = None -> the path where dDNNF data will be saved.
                 If it is set to None a random temporary folder starting with temp_ will be created
                 and deleted once the comèputation ends
+            back_to_fnode (bool) = True -> set it to False to avoid the final pysmt translation
+            sat_result: (bool | None) = None -> the result of the SAT check on the formula
+            quantify_tseitsin (bool) = False -> set it to True to quantify over the tseitsin variables
+                during dDNNF compilation
             computation_logger (Dict | None) = None -> a dictionary that will be filled with
                 data about the computation
-            back_to_fnode (bool) = True -> set it to False to avoid the final pysmt translation
             timeout (int) = 3600 -> the maximum time in seconds the computation is allowed to run
 
         Returns:
@@ -314,10 +344,17 @@ class D4Compiler(DDNNFCompiler):
         self.logger.info("Translating to DIMACS...")
         phi = get_normalized(phi, self.normalizer_solver.get_converter())
         self.from_smtlib_to_dimacs_file(
-            phi, f"{tmp_folder}/dimacs.cnf", tlemmas, sat_result=sat_result)
+            phi,
+            f"{tmp_folder}/dimacs.cnf",
+            tlemmas,
+            sat_result=sat_result,
+            quantify_tseitsin=quantify_tseitsin,
+        )
         elapsed_time = time.time() - start_time
         computation_logger["DIMACS translation time"] = elapsed_time
-        self.logger.info("DIMACS translation completed in %s seconds", str(elapsed_time))
+        self.logger.info(
+            "DIMACS translation completed in %s seconds", str(elapsed_time)
+        )
 
         # save mapping for refinement
         start_time = time.time()
@@ -325,7 +362,9 @@ class D4Compiler(DDNNFCompiler):
             os.mkdir(f"{tmp_folder}/mapping")
         self.logger.info("Saving refinement...")
         save_refinement(self.refinement, f"{tmp_folder}/mapping/mapping.json")
-        with open(f"{tmp_folder}/mapping/important_labels.json", "w", encoding="utf8") as f:
+        with open(
+            f"{tmp_folder}/mapping/important_labels.json", "w", encoding="utf8"
+        ) as f:
             json.dump(self.important_atoms_labels, f)
         elapsed_time = time.time() - start_time
         self.logger.info("Refinement saved in %s seconds", str(elapsed_time))
@@ -355,7 +394,8 @@ class D4Compiler(DDNNFCompiler):
         # return if not back to fnode
         if not back_to_fnode:
             nodes, edges = self.count_nodes_and_edges_from_nnf(
-                f"{tmp_folder}/compilation_output.nnf")
+                f"{tmp_folder}/compilation_output.nnf"
+            )
             return None, nodes, edges
 
         # loading saved mapping
@@ -365,7 +405,8 @@ class D4Compiler(DDNNFCompiler):
         start_time = time.time()
         self.logger.info("Translating to pysmt...")
         phi_ddnnf, nodes, edges = self.from_nnf_to_pysmt(
-            f"{tmp_folder}/compilation_output.nnf")
+            f"{tmp_folder}/compilation_output.nnf"
+        )
         if save_path is None:
             self._clean_tmp_folder(tmp_folder)
         elapsed_time = time.time() - start_time
@@ -378,7 +419,7 @@ class D4Compiler(DDNNFCompiler):
         Load a dDNNF from file and translate it to pysmt
 
         Args:
-            nnf_path (str) ->       the path to the file containing the dDNNF in 
+            nnf_path (str) ->       the path to the file containing the dDNNF in
                                     NNF format provided by the d4 compiler
             mapping_path (str) ->   the path to the file containing the mapping
 
@@ -401,12 +442,12 @@ class D4Compiler(DDNNFCompiler):
             var_map (Dict[FNode,int]) -> a mapping between nodes and integers
             projected_vars (Set[Fnode]) -> the set of variables that have to be kept
         """
-        with open(nnf_file, "r", encoding='utf8') as f:
+        with open(nnf_file, "r", encoding="utf8") as f:
             lines = f.readlines()
 
         projected_ids: Set[int] = {self.abstraction[v] for v in projected_vars}
 
-        with open(nnf_file, "w", encoding='utf8') as f:
+        with open(nnf_file, "w", encoding="utf8") as f:
             for line in lines:
                 if m := _RE_NNF_EDGE.match(line):
                     a, b, ll = m.groups()
@@ -424,11 +465,13 @@ class D4Compiler(DDNNFCompiler):
 
 if __name__ == "__main__":
     from theorydd.formula import read_phi
-    test_phi = read_phi('input/shortest_path.smt')
+
+    test_phi = read_phi("input/shortest_path.smt")
 
     print(test_phi.serialize())
 
     d4_compiler = D4Compiler()
 
     _phi_ddnnf, _a, _b = d4_compiler.compile_dDNNF(
-        test_phi, None, back_to_fnode=False, save_path="tmp")
+        test_phi, None, back_to_fnode=False, save_path="tmp"
+    )
