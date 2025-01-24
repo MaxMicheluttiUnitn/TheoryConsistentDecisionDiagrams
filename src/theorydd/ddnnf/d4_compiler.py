@@ -159,7 +159,7 @@ class D4Compiler(DDNNFCompiler):
         phi_cnf_atoms: frozenset = get_atoms(phi_cnf)
         if do_not_quantify:
             fresh_atoms: frozenset = frozenset()
-        elif quantify_tseitsin:
+        elif not quantify_tseitsin:
             phi_and_lemmas_atoms: frozenset = get_atoms(phi_and_lemmas)
             fresh_atoms = frozenset(phi_and_lemmas_atoms.difference(phi_atoms))
         else:
