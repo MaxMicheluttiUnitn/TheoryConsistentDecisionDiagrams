@@ -29,6 +29,8 @@ class DDNNFCompiler(ABC):
         save_path: str | None = None,
         back_to_fnode: bool = False,
         sat_result: bool | None = None,
+        quantify_tseitsin: bool = False,
+        do_not_quantify: bool = False,
         computation_logger: Dict | None = None,
         timeout: int = 3600,
     ) -> Tuple[FNode | None, int, int]:
@@ -42,9 +44,12 @@ class DDNNFCompiler(ABC):
             save_path (str | None) = None -> the path where dDNNF data will be saved.
                 If it is set to None a random temporary folder starting with temp_ will be created
                 and deleted once the comèputation ends
+            back_to_fnode (bool) = True -> set it to False to avoid the final pysmt translation
+            sat_result (bool | None) = None -> the result of the SAT check on the formula
+            quantify_tseitsin (bool) = False -> set it to True to quantify the tseitsin atoms
+            do_not_quantify (bool) = False -> set it to True to avoid quantifying the atoms
             computation_logger (Dict | None) = None -> a dictionary that will be filled with
                 data about the computation
-            back_to_fnode (bool) = True -> set it to False to avoid the final pysmt translation
             timeout (int) = 3600 -> the maximum time in seconds the computation is allowed to run
 
         Returns:
@@ -59,6 +64,8 @@ class DDNNFCompiler(ABC):
         dimacs_file: str,
         tlemmas: List[FNode] | None = None,
         sat_result: bool | None = None,
+        quantify_tseitsin: bool = False,
+        do_not_quantify: bool = False,
     ) -> None:
         """convert a smtlib formula to a dimacs file that can be read from a dDNNF compiler
 
@@ -67,6 +74,8 @@ class DDNNFCompiler(ABC):
             dimacs_file (str) -> the path to the file where the dimacs output need to be saved
             tlemmas (List[FNode] | None) = None -> a list of theory lemmas to be added to the formula
             sat_result (bool | None) = None -> the result of the SAT check on the formula
+            quantify_tseitsin (bool) = False -> set it to True to quantify the tseitsin atoms
+            do_not_quantify (bool) = False -> set it to True to avoid quantifying the atoms
         """
         raise NotImplementedError()
 

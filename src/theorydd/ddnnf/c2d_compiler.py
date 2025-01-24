@@ -49,6 +49,7 @@ class C2DCompiler(DDNNFCompiler):
         tlemmas: List[FNode] | None = None,
         sat_result: bool | None = None,
         quantify_tseitsin: bool = False,
+        do_not_quantify: bool = False,
         quantification_file: str = "quantification.exist",
     ) -> None:
         """
@@ -63,6 +64,7 @@ class C2DCompiler(DDNNFCompiler):
             tlemmas (List[FNode] | None) -> a list of theory lemmas to be added to the formula
             sat_result (bool | None) -> the result of the SAT check on the formula
             quantify_tseitsin (bool) -> if True, the compiler will quantify over the tseitsin fresh variables
+            do_not_quantify (bool) -> if True, the compiler will not quantify over the fresh variables
             quantification_file (str) -> the path to the file where the quantified variables
                 need to be saved
         """
@@ -76,7 +78,9 @@ class C2DCompiler(DDNNFCompiler):
         phi_cnf: FNode = LabelCNFizer().convert_as_formula(phi_and_lemmas)
         phi_atoms: frozenset = get_atoms(phi)
         phi_cnf_atoms: frozenset = get_atoms(phi_cnf)
-        if quantify_tseitsin:
+        if do_not_quantify:
+            fresh_atoms: List[FNode] = []
+        elif quantify_tseitsin:
             fresh_atoms: List[FNode] = list(phi_cnf_atoms.difference(phi_atoms))
         else:
             phi_and_lemmas_atoms: frozenset = get_atoms(phi_and_lemmas)
@@ -229,6 +233,7 @@ class C2DCompiler(DDNNFCompiler):
         back_to_fnode: bool = False,
         sat_result: bool | None = None,
         quantify_tseitsin: bool = False,
+        do_not_quantify: bool = False,
         computation_logger: Dict | None = None,
         timeout: int = 3600,
     ) -> Tuple[FNode | None, int, int]:
@@ -242,6 +247,7 @@ class C2DCompiler(DDNNFCompiler):
             back_to_fnode (bool) -> if True, the function returns the pysmt formula
             sat_result (bool | None) -> the result of the SAT check on the formula
             quantify_tseitsin (bool) -> if True, the compiler will quantify over the tseitsin fresh variables
+            do_not_quantify (bool) -> if True, the compiler will not quantify over the fresh variables
             computation_logger (Dict | None) -> a dictionary to store the computation time
             timeout (int) -> the maximum time allowed for the computation
 
@@ -272,6 +278,7 @@ class C2DCompiler(DDNNFCompiler):
             tlemmas,
             sat_result=sat_result,
             quantify_tseitsin=quantify_tseitsin,
+            do_not_quantify=do_not_quantify,
             quantification_file=f"{tmp_folder}/quantification.exist"
         )
         elapsed_time = time.time() - start_time

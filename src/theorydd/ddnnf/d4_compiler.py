@@ -131,6 +131,7 @@ class D4Compiler(DDNNFCompiler):
         tlemmas: List[FNode] | None = None,
         sat_result: bool | None = None,
         quantify_tseitsin: bool = False,
+        do_not_quantify: bool = False,
     ) -> None:
         """
         translates an SMT formula in DIMACS format and saves it on file.
@@ -143,6 +144,8 @@ class D4Compiler(DDNNFCompiler):
             tlemmas (List[FNode] | None) = None -> a list of theory lemmas to be added to the formula
             sat_result (bool | None) = None -> the result of the SAT check on the formula
             quantify_tseitsin (bool) = False -> set it to True to quantify over the tseitsin variables
+                during dDNNF compilation
+            do_not_quantify (bool) = False -> set it to True to avoid quantifying over any fresh variable
         """
         phi_atoms: frozenset = get_atoms(phi)
         if tlemmas is not None:
@@ -154,7 +157,9 @@ class D4Compiler(DDNNFCompiler):
         )
         phi_cnf: FNode = LabelCNFizer().convert_as_formula(phi_and_lemmas)
         phi_cnf_atoms: frozenset = get_atoms(phi_cnf)
-        if quantify_tseitsin:
+        if do_not_quantify:
+            fresh_atoms: frozenset = frozenset()
+        elif quantify_tseitsin:
             phi_and_lemmas_atoms: frozenset = get_atoms(phi_and_lemmas)
             fresh_atoms = frozenset(phi_and_lemmas_atoms.difference(phi_atoms))
         else:
@@ -302,6 +307,7 @@ class D4Compiler(DDNNFCompiler):
         back_to_fnode: bool = False,
         sat_result: bool | None = None,
         quantify_tseitsin: bool = False,
+        do_not_quantify: bool = False,
         computation_logger: Dict | None = None,
         timeout: int = 3600,
     ) -> Tuple[FNode | None, int, int]:
@@ -318,6 +324,7 @@ class D4Compiler(DDNNFCompiler):
             sat_result: (bool | None) = None -> the result of the SAT check on the formula
             quantify_tseitsin (bool) = False -> set it to True to quantify over the tseitsin variables
                 during dDNNF compilation
+            do_not_quantify (bool) = False -> set it to True to avoid quantifying over any fresh variable
             computation_logger (Dict | None) = None -> a dictionary that will be filled with
                 data about the computation
             timeout (int) = 3600 -> the maximum time in seconds the computation is allowed to run
@@ -349,6 +356,7 @@ class D4Compiler(DDNNFCompiler):
             tlemmas,
             sat_result=sat_result,
             quantify_tseitsin=quantify_tseitsin,
+            do_not_quantify=do_not_quantify,
         )
         elapsed_time = time.time() - start_time
         computation_logger["DIMACS translation time"] = elapsed_time
