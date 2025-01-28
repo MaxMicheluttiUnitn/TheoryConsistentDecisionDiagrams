@@ -27,6 +27,7 @@ from theorydd.util._string_generator import SequentialStringGenerator
 from theorydd.util.custom_exceptions import FormulaException
 from theorydd.util.disjoint_set import DisjointSet
 from theorydd.walkers.normalizer import NormalizerWalker
+from theorydd.walkers.size_counter import CountingWalker
 from theorydd.walkers.duoble_negation_walker import DoubleNegWalker
 
 
@@ -421,6 +422,20 @@ def get_true_given_atoms(atoms: Iterable[FNode]) -> FNode:
     for atom in atoms:
         big_and_items.append(_Or(atom, _Not(atom)))
     return _And(*big_and_items)
+
+def get_fnode_size(phi: FNode) -> int:
+    """returns the size of the formula, 
+    which is the total amount of nodes
+    of the boolean abstraction of the formula
+
+    Args:
+        phi (FNode): a pysmt formula
+
+    Returns:
+        int: the size of the formula
+    """
+    walker = CountingWalker()
+    return walker.walk(phi)
 
 def negate(phi: FNode) -> FNode:
     """returns the negation of phi
