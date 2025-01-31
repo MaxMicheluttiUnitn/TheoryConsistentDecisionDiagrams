@@ -24,7 +24,6 @@ def main():
         vtree_type="balanced",
         solver="partial",  # only used for normalization
         computation_logger=logger,
-        verbose=True,
     )
 
     # USE YOUR DD

@@ -1,4 +1,4 @@
-from theorydd.abstractdd.ldd import TheoryLDD
+from theorydd.abstractdd.ldd import LDD as TheoryLDD
 from pysmt.shortcuts import And, Implies, Or, Iff, LT, Int, Symbol, INT, Plus
 
 
@@ -23,7 +23,6 @@ def main():
         phi,
         theory="TVPI",
         computation_logger=logger,
-        verbose=True
     )
 
     # USE YOUR DD

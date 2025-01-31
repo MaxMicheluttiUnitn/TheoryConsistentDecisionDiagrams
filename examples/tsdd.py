@@ -24,7 +24,6 @@ def main():
         vtree_type="balanced",
         solver="partial",  # used to compute all-SMT and extract lemmas
         computation_logger=logger,
-        verbose=True,
     )
 
     # USE YOUR DD
