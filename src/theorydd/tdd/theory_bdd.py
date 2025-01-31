@@ -39,6 +39,7 @@ class TheoryBDD(TheoryDD):
     refinement: Dict[str, FNode]
     logger: logging.Logger
     ordering: List[FNode]
+    structure_name: str
 
     def __init__(
         self,
@@ -70,24 +71,29 @@ class TheoryBDD(TheoryDD):
                 If this is not None, then all other parameters are ignored
             computation_logger (Dict | None) [None]: a dictionary that will be updated to store computation info.
         """
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger("theorydd_bdd")
         super().__init__()
-        self.logger = logging.getLogger("theorydd_bdd")
         if folder_name is not None:
             if not isinstance(solver, SMTEnumerator):
                 solver = None
             self._load_from_folder(folder_name, normalization_solver=solver)
             return
+        if not hasattr(self, "structure_name"):
+            self.structure_name = "T-BDD"
         if computation_logger is None:
             computation_logger = {}
-        if computation_logger.get("T-BDD") is None:
-            computation_logger["T-BDD"] = {}
+        if computation_logger.get(self.structure_name) is None:
+            computation_logger[self.structure_name] = {}
 
         # NORMALIZE PHI
         if isinstance(solver, str):
             smt_solver = _get_solver(solver)
         else:
             smt_solver = solver
-        phi = self._normalize_input(phi, smt_solver, computation_logger["T-BDD"])
+        phi = self._normalize_input(
+            phi, smt_solver, computation_logger[self.structure_name]
+        )
 
         # LOAD LEMMAS
         tlemmas, sat_result = self._load_lemmas(
@@ -96,7 +102,7 @@ class TheoryBDD(TheoryDD):
             tlemmas,
             load_lemmas,
             sat_result,
-            computation_logger["T-BDD"],
+            computation_logger[self.structure_name],
         )
 
         # COMPUTE PHI AND LEMMAS
@@ -106,7 +112,7 @@ class TheoryBDD(TheoryDD):
         self.qvars = find_qvars(
             phi,
             phi_and_lemmas,
-            computation_logger=computation_logger["T-BDD"],
+            computation_logger=computation_logger[self.structure_name],
         )
 
         # THESE ATOMS SHOULD ALREADY BE NORMALIZED
@@ -114,7 +120,9 @@ class TheoryBDD(TheoryDD):
         atoms = get_atoms(phi_and_lemmas)
 
         # CREATING VARIABLE MAPPING
-        self.abstraction = self._compute_mapping(atoms, computation_logger["T-BDD"])
+        self.abstraction = self._compute_mapping(
+            atoms, computation_logger[self.structure_name]
+        )
         self.refinement = {v: k for k, v in self.abstraction.items()}
 
         # PREPARE FOR BUILDING
@@ -146,12 +154,16 @@ class TheoryBDD(TheoryDD):
         self.logger.info(
             "BDD preparation phase completed in %s seconds", str(elapsed_time)
         )
-        computation_logger["T-BDD"]["DD preparation time"] = elapsed_time
+        computation_logger[self.structure_name]["DD preparation time"] = elapsed_time
 
         if sat_result is None or sat_result == SAT:
-            self.root = self._build(phi, tlemmas, walker, computation_logger["T-BDD"])
+            self.root = self._build(
+                phi, tlemmas, walker, computation_logger[self.structure_name]
+            )
         else:
-            self.root = self._build_unsat(walker, computation_logger["T-BDD"])
+            self.root = self._build_unsat(
+                walker, computation_logger[self.structure_name]
+            )
 
     def _compute_ordering(self, atoms: List[FNode]) -> List[FNode]:
         """computes the ordering of the variables
@@ -359,7 +371,9 @@ class TheoryBDD(TheoryDD):
         # SAVE DD
         _cudd_dump(self.root, f"{folder_path}/tbdd_data")
 
-    def _load_from_folder(self, folder_path: str, normalization_solver: SMTEnumerator | None = None) -> None:
+    def _load_from_folder(
+        self, folder_path: str, normalization_solver: SMTEnumerator | None = None
+    ) -> None:
         """Load a T-BDD from a folder
 
         Args:
@@ -368,16 +382,25 @@ class TheoryBDD(TheoryDD):
         """
         if not os.path.exists(folder_path):
             raise FileNotFoundError(
-                f"Folder {folder_path} does not exist, cannot load T-BDD"
+                f"Cannot load T-BDD: Folder {folder_path} does not exist, cannot load T-BDD"
+            )
+        if not os.path.isfile(f"{folder_path}/abstraction.json"):
+            raise FileNotFoundError(
+                f"Cannot load T-BDD: File {folder_path}/abstraction.json does not exist"
+            )
+        if not os.path.isfile(f"{folder_path}/qvars.qvars"):
+            raise FileNotFoundError(
+                f"Cannot load T-BDD: File {folder_path}/qvars.qvars does not exist"
             )
         if normalization_solver is None:
             normalization_solver = _get_solver("total")
         abstraction = formula.load_abstraction_function(
             f"{folder_path}/abstraction.json"
         )
-        self.abstraction = {}
-        for k,v in abstraction.items():
-            self.abstraction[formula.get_normalized(k,normalization_solver.get_converter())] = v
+        self.abstraction = {
+            formula.get_normalized(k, normalization_solver.get_converter()): v
+            for k, v in abstraction.items()
+        }
         self.refinement = {v: k for k, v in self.abstraction.items()}
         self.bdd = cudd_bdd.BDD()
         self.root, ordering_dict = _cudd_load(f"{folder_path}/tbdd_data", self.bdd)
@@ -390,7 +413,9 @@ class TheoryBDD(TheoryDD):
             self.qvars = [self.refinement[qvar_id] for qvar_id in qvars_indexes]
 
 
-def tbdd_load_from_folder(folder_path: str, normalizer_solver: SMTEnumerator | None = None) -> TheoryBDD:
+def tbdd_load_from_folder(
+    folder_path: str, normalizer_solver: SMTEnumerator | None = None
+) -> TheoryBDD:
     """Load a T-BDD from a file
 
     Args:

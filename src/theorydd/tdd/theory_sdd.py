@@ -36,6 +36,7 @@ class TheorySDD(TheoryDD):
     refinement: Dict[int, FNode]
     vtree: Vtree
     atom_literal_map: Dict[FNode, object]  # Dict[FNode, SddLiteral]
+    structure_name: str
 
     def __init__(
         self,
@@ -74,9 +75,9 @@ class TheorySDD(TheoryDD):
                 If this is not None, then all other parameters are ignored
             computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger("theorydd_tsdd")
         super().__init__()
-        self.logger = logging.getLogger("theorydd_tsdd")
-
         if folder_name is not None:
             if not isinstance(solver, SMTEnumerator):
                 solver = None
@@ -403,7 +404,9 @@ class TheorySDD(TheoryDD):
             os.makedirs(folder_path)
         self.vtree.save(str.encode(folder_path + "/vtree.vtree"))
 
-    def _load_from_folder(self, folder_path: str, normalization_solver: SMTEnumerator | None = None) -> None:
+    def _load_from_folder(
+        self, folder_path: str, normalization_solver: SMTEnumerator | None = None
+    ) -> None:
         """
         Load an AbstractionSDD from a folder
 
@@ -419,13 +422,14 @@ class TheorySDD(TheoryDD):
         abstraction = formula.load_abstraction_function(
             folder_path + "/abstraction.json"
         )
-        self.abstraction = {}
-        for key, value in abstraction.items():
-            self.abstraction[formula.get_normalized(key,normalization_solver.get_converter())] = value
+        self.abstraction = {
+            formula.get_normalized(key, normalization_solver.get_converter()): value
+            for key, value in abstraction.items()
+        }
         self.manager = SddManager.from_vtree(self.vtree)
         self.refinement = {v: k for k, v in self.abstraction.items()}
         sdd_literals = [
-            self.manager.literal(i) for i in range(1, len(self.abstraction.keys()) + 1)
+            self.manager.literal(i) for i in range(1, len(self.abstraction) + 1)
         ]
         self.atom_literal_map = self._get_atom_literal_map(sdd_literals)
         self.root = self.manager.read_sdd_file(str.encode(f"{folder_path}/sdd.sdd"))
@@ -445,11 +449,17 @@ def vtree_load_from_folder(folder_path: str) -> Vtree:
         folder_path (str): the path to the folder containing the V-Tree
     """
     if not os.path.exists(folder_path):
-        raise FileNotFoundError("The folder does not exist")
+        raise FileNotFoundError("Cannot load Vtree: The folder does not exist")
+    if not os.path.isfile(folder_path + "/vtree.vtree"):
+        raise FileNotFoundError(
+            "Cannot load Vtree: The file vtree.vtree does not exist in the folder"
+        )
     return Vtree(filename=folder_path + "/vtree.vtree")
 
 
-def tsdd_load_from_folder(folder_path: str, normalizer_solver: SMTEnumerator | None = None) -> TheorySDD:
+def tsdd_load_from_folder(
+    folder_path: str, normalizer_solver: SMTEnumerator | None = None
+) -> TheorySDD:
     """Load a T-SDD from the specified folder
 
     Args:

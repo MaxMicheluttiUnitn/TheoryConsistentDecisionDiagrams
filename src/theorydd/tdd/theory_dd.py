@@ -20,10 +20,14 @@ class TheoryDD(ABC):
     """
 
     def __init__(self):
-        self.abstraction = {}
-        self.refinement = {}
-        self.qvars = []
-        self.logger = logging.getLogger("theorydd_tdd")
+        if not hasattr(self, "abstraction"):
+            self.abstraction = {}
+        if not hasattr(self, "refinement"):
+            self.refinement = {}
+        if not hasattr(self, "qvars"):
+            self.qvars = []
+        if not hasattr(self, "logger"):
+            self.logger = logging.getLogger("theorydd_tdd")
 
     def _normalize_input(
         self, phi: FNode, solver: SMTEnumerator, computation_logger: Dict
