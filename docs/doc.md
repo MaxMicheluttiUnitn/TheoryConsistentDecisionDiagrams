@@ -28,15 +28,14 @@ To install the package, first install the **dd** dependency as follows:
 
 ```
     pip install --upgrade wheel cython
-    export DD_FETCH=1 DD_CUDD=1 DD_LDD=1
-    pip install git+https://github.com/masinag/dd.git@main -vvv --use-pep517 --no-build-isolation
+    export DD_FETCH=1 DD_CUDD=1
+    pip install dd=0.5.7 -vvv --use-pep517 --no-build-isolation
 ```
 
-The dd package cannot be installed directly from pip's package repository since this package depends on a fork of the dd package which allows for compilation into the LDD target language. The fork is publicly available [here](https://github.com/masinag/dd).<br>
-You can check that the dependency is installed correctly if the following command does not raise any errors:
+You can check that the dependency is installed correctly if the following command does not give you ant errors:
 
 ```
-    python -c 'from dd import ldd; ldd.LDD(ldd.TVPI,0,0)'
+    python -c 'import dd.cudd'
 ```
 
 Now you can install the theorydd package (this package) directly from this repository using pip:
@@ -97,7 +96,10 @@ Remember to grant execution privileges (_chmod +x_) to the binaries before using
 
 ## Constants
 
-All **constants** for this package are defined inside the _constants.py_ module.
+All **constants** for this package are defined inside the _constants.py_ module.<br>
+The constant list _VALID_SOLVERS_ contains all valid strings refering to a solver contained in this package.<br>
+The constant list _VALIC_VTREE_ contains all valid configuration type for building V-trees for SDDs.<br>
+
 
 ## SMT Enumerators
 
@@ -129,10 +131,10 @@ The abstract methods are:
 Args:
 - _self_
 - _phi_: <br> 
-    **TYPE**: _FNode_: <br>
+    **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula over which the solver must compute enumeration
 - _boolean_mapping_: <br>
-    **TYPE**: _Dict[FNode,FNode]_ _|_ _None_: <br>
+    **TYPE**: _Dict[FNode,FNode]_ _|_ _None_ <br>
     **DEFAULT VALUE**: _None_
     **DESCRIPTION**: a mapping that associates to each fresh boolean variable (keys) a atom that appears in _phi_ (values). When a solver is provided a boolean mapping it will enumerate over the fresh boolean variables instead of the original atoms. Some enumerators may ignore this argument.
 
@@ -183,7 +185,7 @@ The SMTEnumerator interface also implements a non-abstract method which is inher
 Args:
 - _self_
 - _phi_: <br> 
-    **TYPE**: _FNode_: <br>
+    **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula over which the solver must compute enumeration
 
 Returns:
@@ -245,22 +247,22 @@ Defined in the _[lemma_extractor.py](../src/theorydd/solvers/lemma_extractor.py)
 #### extract()
 Args:
 - _phi_: <br> 
-    **TYPE**: _FNode_: <br>
+    **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula from which to extract theory lemmas
 - _smt_solver_: <br> 
-    **TYPE**: _SMTEnumerator_: <br>
+    **TYPE**: _SMTEnumerator_ <br>
     **DESCRIPTION**: the _SMTEnumerator_ on which _check_all_sat_ will be called in order to extract theory lemmas
 - _enumerate_true: <br>
-    **TYPE**: _bool_: <br>
-    **DEFAULT VALUE**: _False_: <br>
+    **TYPE**: _bool_ <br>
+    **DEFAULT VALUE**: _False_ <br>
     **DESCRIPTION**: if set to _True_, _enumerate_true_ will be called on _smt_solver_ instead of _check_all_sat_
 - _use_boolean_mapping_: <br>
-    **TYPE**: _bool_: <br>
-    **DEFAULT VALUE**: _True_: <br>
+    **TYPE**: _bool_ <br>
+    **DEFAULT VALUE**: _True_ <br>
     **DESCRIPTION**: if set to _True_, the solver that extracts lemmas for _phi_ will be provided with a boolean mapping
 - _computation_logger_: <br>
-    **TYPE**: _Dict | None_: <br>
-    **DEFAULT VALUE**: _None_: <br>
+    **TYPE**: _Dict | None_ <br>
+    **DEFAULT VALUE**: _None_ <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns (Tuple):
@@ -283,8 +285,8 @@ Args:
     **TYPE**: _FNode_<br>
     **DESCRIPTION**: the formula after the conjunction with the theory lemmas
 - _computation_logger_: <br>
-    **TYPE**: _Dict | None_: <br>
-    **DEFAULT VALUE**: _None_: <br>
+    **TYPE**: _Dict | None_ <br>
+    **DEFAULT VALUE**: _None_ <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns:
@@ -302,15 +304,20 @@ All such compilers inherit from the interface class [TheoryDD](#theorydd) and im
 
 ### TheoryDD
 
-The [_theory_dd_](../src/theorydd/tdd/theory_dd.py) abstract class requires implementation of the following abstract methods:<br>
-- [_enumerate_qvars()](#_enumerate_qvars)
-- [_load_from_folder()](#_load_from_folder)
-- [save_to_folder()](#save_to_folder)
-- [\_\_len\_\_()](#__len__)
-- [count_nodes](#count_nodes)
-- [count_vertices](#count_vertices)
-- [count_models](#count_models)
-- [graphic_dump](#graphics_dump)
+The [_TheoryDD_](../src/theorydd/tdd/theory_dd.py) abstract class requires implementation of the following abstract methods:<br>
+- **[_enumerate_qvars()](#_enumerate_qvars)**
+- **[_load_from_folder()](#_load_from_folder)**
+- **[save_to_folder()](#save_to_folder)**
+- **[\_\_len\_\_()](#__len__)**
+- **[count_nodes()](#count_nodes)**
+- **[count_vertices()](#count_vertices)**
+- **[count_models()](#count_models)**
+- **[graphic_dump()](#graphics_dump)**
+- **[pick()](#pick)**
+- **[pick_all()](#pick_all)**
+- **[pick_all_iter()](#pick_all_iter)**
+- **[is_sat()](#is_sat)**
+- **[is_valid()](#is_valid)**
 #
 #### _enumerate_qvars()
 Args:
@@ -319,7 +326,7 @@ Args:
 **TYPE**: _object_
 **DESCRIPTION**: the _T-DD_ built from the big and of the theory lemmas
 - _mapped_qvars_: <br>
-**TYPE**: _List[object]_: <br>
+**TYPE**: _List[object]_ <br>
 **DESCRIPTION**: a list of all the labels over which to enumerate
 
 Returns:
@@ -333,7 +340,7 @@ Method description:
 Args:
 - _self_
 - _folder_path_: <br>
-**TYPE**: _str_: <br>
+**TYPE**: _str_ <br>
 **DESCRIPTION**: the path to the folder where the _T-DD_ is stored. Notice that different _T-DDs_ may have different formats for serialization. 
 
 Method Description:
@@ -343,7 +350,7 @@ Method Description:
 Args:
 - _self_
 - _folder_path_: <br>
-**TYPE**: _str_: <br>
+**TYPE**: _str_ <br>
 **DESCRIPTION**: the path to the folder where the _T-DD_ must be stored
 
 Method description:
@@ -403,26 +410,81 @@ Args:
 Method description:
 - A graphical representation of _T-DD_ is saved inside _output_file_. This method may raise errors if [GraphViz](https://www.graphviz.org/) is not installed on the user's machine or if the size of the _T-DD_ is high. 
 #
+#### pick()
+Args:
+- _self_
 
-The [_theory_dd_](../src/theorydd/tdd/theory_dd.py) class also implemnts some usefulprivate methods for the construction of _T-DDs_:
+Returns:
+- _Dict[FNode, bool] | None_: <br>
+**DESCRIPTION**: a model of the encoded DD, _None_ if the DD has no models.
 
-- [_normalize_input()](#_normalize_input)
-- [_load_lemmas()](#_load_lemmas)
-- [_build()](#_build)
-- [_build_unsat()](#_build_unsat)
+Method description:
+- returns a model of the encoded DD, _None_ if the DD has no models.
+#
+#### pick_all()
+Args:
+- _self_
+
+Returns:
+- _List[Dict[FNode, bool]]_: <br>
+**DESCRIPTION**: a list of all the models of the DD
+
+Method description:
+- returns a list of all the models encoded in the DD, if the encoded formula is _TRUE_ or unsatisfiable, an empty list will be returned.
+#
+#### pick_all_iter()
+Args:
+- _self_
+
+Returns:
+- _Iterator[Dict[FNode, bool]]_: <br>
+**DESCRIPTION**: an iterator that enumerates all encoded models
+
+Method description:
+- this method returns an iterator which yields the models encoded in the DD one at a time as _Dict[FNode,bool]_.
+#
+#### is_sat()
+Args:
+- _self_
+
+Returns:
+- _bool_: <br>
+**DESCRIPTION**: _True_ if the encoded formula is satisfiable, _False_ otherwise
+
+Method description:
+- this method checks the satisfiability of the compiled formula.
+#
+#### is_valid()
+Args:
+- _self_
+
+Returns:
+- _bool_: <br>
+**DESCRIPTION**: _True_ if the encoded formula is valid, _False_ otherwise
+
+Method description:
+- this method checks the validity of the compiled formula.
+#
+
+The [_theory_dd_](../src/theorydd/tdd/theory_dd.py) class also implements some useful private methods for the construction of _T-DDs_:
+
+- **[_normalize_input()](#_normalize_input)**
+- **[_load_lemmas()](#_load_lemmas)**
+- **[_build()](#_build)**
+- **[_build_unsat()](#_build_unsat)**
 
 #
 #### _normalize_input()
 Args:
 - _self_
 - _phi_: <br>
-    **TYPE**: _FNode_: <br>
+    **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula that has to be encoded into a _T-DD_
 - _solver_: <br>
-    **TYPE**: _SMTEnumerator_: <br>
+    **TYPE**: _SMTEnumerator_ <br>
     **DESCRIPTION**: an _SMTEnumerator_ that is only used for normalization
 - _computation_logger_: <br>
-    **TYPE**: _Dict_: <br>
+    **TYPE**: _Dict_ <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns:
@@ -436,22 +498,22 @@ Method description:
 Args:
 - _self_
 - _phi_: <br>
-    **TYPE**: _FNode_: <br>
+    **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula that has to be encoded into a _T-DD_
 - _smt_solver_: <br>
     **TYPE**: _SMTEnumerator_: <br>
     **DESCRIPTION**: an _SMTEnumerator_ that is used for normalization of the theory lemmas and theory lemma extraction if necessary
 - _tlemmas_: <br>
-    **TYPE**: _List[FNode] | None_
+    **TYPE**: _List[FNode] | None_ <br>
     **DESCRIPTION**: the theory lemmas of _phi_, or _None_ if the theory lemmas are not available in memory yet
 - _load_lemmas_: <br>
-    **TYPE**: _str | None_: <br>
+    **TYPE**: _str | None_ <br>
     **DESCRIPTION**: the path to a .smt2 file where the theory lemmas are stored, _None_ if such a file is not available
 - _sat_result_: <br>
-    **TYPE**: _bool | None_: <br>
+    **TYPE**: _bool | None_ <br>
     **DESCRIPTION**: the T-satisfiability of _phi_ if known, _None_ otherwise
 - _computation_logger_: <br>
-    **TYPE**: _Dict_: <br>
+    **TYPE**: _Dict_ <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 Returns:
@@ -467,16 +529,16 @@ Method description:
 Args:
 - _self_
 - _phi_: <br>
-    **TYPE**: _FNode_: <br>
+    **TYPE**: _FNode_ <br>
     **DESCRIPTION**: the formula that has to be encoded in the _T-DD_
 - _tlemmas_: <br>
-    **TYPE**: _List[FNode]_: <br>
+    **TYPE**: _List[FNode]_ <br>
     **DESCRIPTION**: the list of the theory lemmas of _phi_
 - _walker_: <br>
-    **TYPE**: _DagWalker_: <br>
+    **TYPE**: _DagWalker_ <br>
     **DESCRIPTION**: a walker that walks over _phi_ in order to call the correct apply function of the _T-DD_
 - _computation_logger_: <br>
-    **TYPE**: _Dict_: <br>
+    **TYPE**: _Dict_ <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 Returns:
 - _object_:
@@ -489,10 +551,10 @@ Method description:
 Args:
 - _self_
 - _walker_: <br>
-    **TYPE**: _DagWalker_: <br>
+    **TYPE**: _DagWalker_ <br>
     **DESCRIPTION**: a walker that walks over an FNode in order to call the correct apply function of the _T-DD_
 - _computation_logger_: <br>
-    **TYPE**: _Dict_: <br>
+    **TYPE**: _Dict_ <br>
     **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 Returns:
 - _object_:
@@ -502,9 +564,187 @@ Method description:
 - builds the _T-DD_ for an unsatisfiable SMT formula in an efficient way and returns its root
 #
 
+Finally, the [_TheoryDD_](../src/theorydd/tdd/theory_dd.py) class implements the following public methods that are available to all its children classes:
+- **[get_mapping()](#get_mapping)**
+- **[get_abstraction()](#get_abstraction)**
+- **[get_refinement()](#get_refinement)**
+
+#
+#### get_mapping()
+Method description:
+Same as [_get_abstraction()_](#get_abstraction).
+#
+#### get_abstraction()
+Args:
+- _self_
+
+Returns:
+- _Dict[FNode,object]_:
+**DECRIPTION**: a dictionary defining the abstraction function used when building the DD
+
+Method description:
+- Returns a dictionary which describes the abstraction function that the DD uses.
+# 
+#### get_refinement()
+Args:
+- _self_
+
+Returns:
+- _Dict[object,FNode]_:
+**DECRIPTION**: a dictionary defining the refinement function 
+
+Method description:
+- Returns a dictionary which describes the abstraction function that the DD uses, which is used to decode the models of the DD when [_pick()_](#pick), [_pick_all()](#pick_all) or [_pick_all_iter()_](#pick_all_iter) are called.
+#
+
 ### TheoryBDD
 
+A  [_TheoryBDD_](../src/theorydd/tdd/theory_bdd.py) instance is an instance of a [_TheoryDD_](#theorydd) which implements all abstract methods and builds the DD through the [CUDD library](https://largo.lip6.fr/trac/verif_tools/export/8/vis_dev/glu-2.1/src/cuBdd/doc/cudd.ps) wrapper provided by the [dd](https://github.com/tulip-control/dd) Python package.
+
+Constructor args:
+- _self_
+- _phi_: <br>
+    **TYPE**: _FNode_ <br>
+    **DESCRIPTION**: the formula that has to be compiled into a _T-BDD_
+- _solver_: <br>
+    **TYPE**: _SMTEnumerator | str_ <br>
+    **DEFAULT VALUE**: _"total"_ <br>
+    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is use to compute enumeration (if necessary) and to apply normalization to theory atoms while building the DD.
+- _tlemmas_: <br>
+    **TYPE**: _List[FNode] | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a list of FNode is provided, the theory lemmas will not be enumerated and the procided lemmas will be used instead, skipping enumeration
+- _load_lemmas_: <br>
+    **TYPE**: _str | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a string is provided, the theory lemmas will be loaded from the SMT file located at the path specified in that string, skipping enumeration. If the _tlemmas_ parameter for this function is not None, this parameter is ignored.
+- _sat_result_:
+    **TYPE**: _bool | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: provide one of the boolean constant _SAT_ or _UNSAT_ defined in the [constants](../src/theorydd/constants) module to signal to the constructor that it is dealing with a satisfiable/unsatisfiable formula in order to speed up compilation time. If _None_ is provided, than the constructor does not assume that the formula is either satisfiable or unsatisfiable.
+- _use_ordering_: <br>
+    **TYPE**: _List[FNode] | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a list of FNode is provided, this class will respect the provided ordering of variables when building the DD
+- _folder_name_: <br>
+    **TYPE**: _str | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a string is provided, all other parameters except for _solver_ will be ignored and the _TheoryBDD_ will be loaded from the specified path
+- _computation_logger_: <br>
+    **TYPE**: _Dict | None_ <br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
+
+
+In addition to implemnting all abstract methods from the [_TheoryDD_](#theorydd) interfece, this class also provides these public methods:
+- **[get_ordering()](#get_ordering)**<br>
+- **[condition()](#condition)**<br>
+#
+#### get_ordering()
+Args:
+- _self_
+
+Returns:
+- _List[FNode]_: <br>
+**DESCRIPTION**: the ordering of atoms used while building the _T-BDD_
+
+Method description:
+- The ordering used for building the DD is returned
+#
+#### condition()
+Args:
+- _self_
+- _condition_: <br>
+    **TYPE**: _str_ <br>
+    **DESCRIPTION**: a string contained in the values of the abstraction dictionary which corresponds to the abstraction of the atom that you want to condition over. Start the string with a ```-``` symbol in order to indicate a negation of the atom (condition over Not atom).<br>
+
+Method description:
+- Transform the _TheoryBDD_ of phi into the _ThoeryBDD_ of phi | _condition_.
+#
+
+
 ### TheorySDD
+
+A  [_TheorySDD_](../src/theorydd/tdd/theory_sdd.py) instance is an instance of a [_TheoryDD_](#theorydd) which implements all abstract methods and builds the DD through the [SDD library](http://reasoning.cs.ucla.edu/sdd/) wrapper provided by the [PySDD](https://github.com/ML-KULeuven/PySDD) Python package.
+
+Constructor args:
+- _self_
+- _phi_: <br>
+    **TYPE**: _FNode_ <br>
+    **DESCRIPTION**: the formula that has to be compiled into a _T-SDD_
+- _solver_: <br>
+    **TYPE**: _SMTEnumerator | str_ <br>
+    **DEFAULT VALUE**: _"total"_ <br>
+    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is use to compute enumeration (if necessary) and to apply normalization to theory atoms while building the DD.
+- _tlemmas_: <br>
+    **TYPE**: _List[FNode] | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a list of FNode is provided, the theory lemmas will not be enumerated and the procided lemmas will be used instead, skipping enumeration
+- _load_lemmas_: <br>
+    **TYPE**: _str | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a string is provided, the theory lemmas will be loaded from the SMT file located at the path specified in that string, skipping enumeration. If the _tlemmas_ parameter for this function is not None, this parameter is ignored.
+- _sat_result_:
+    **TYPE**: _bool | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: provide one of the boolean constant _SAT_ or _UNSAT_ defined in the [constants](../src/theorydd/constants) module to signal to the constructor that it is dealing with a satisfiable/unsatisfiable formula in order to speed up compilation time. If _None_ is provided, than the constructor does not assume that the formula is either satisfiable or unsatisfiable.
+- _vtree_type_: <br>
+    **TYPE**: _str_<br>
+    **DEFAULT VALUE**: _"balanced"_ <br>
+    **DESCRIPTION**: an indication of the shape of the V-Tree used for the construction of the SDD. Valid values for this parameter are specified in the _VALID_VTREE_ constant in the [constants](../src/theorydd/constants) module.
+- _use_vtree: <br>
+    **TYPE**: _Vtree | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a Vtree is provided, the specified Vtree will be used and the _vtree_type_ parameter will be ignored. It is important to use this parameter together with the _use_abstraction_ parameter since the Vtree ordering in the resulting structure may be shuffled otherwise.
+- _use_abstraction_: <br>
+    **TYPE**: _Dict[Fnode,int] | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a _Dict[FNode,int]_ is provided, the specified abstraction function will be used while building the DD. It is important to use this parameter together with the _use_vtree_ parameter since the Vtree ordering in the resulting structure may be shuffled otherwise.
+- _folder_name_: <br>
+    **TYPE**: _str | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a string is provided, all other parameters except for _solver_ will be ignored and the _TheoryBDD_ will be loaded from the specified path
+- _computation_logger_: <br>
+    **TYPE**: _Dict | None_ <br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
+
+In addition to implemnting all abstract methods from the [_TheoryDD_](#theorydd) interfece, this class also provides these public methods:
+- **[graphic_dump_vtree()](#graphic_dump_vtree)**<br>
+- **[condition()](#condition-1)**<br>
+- **[get_vtree()](#get_vtree)**
+#
+#### graphic_dump_vtree()
+Args:
+- _self_
+- _output_file_: <br>
+**TYPE**: _str_<br>
+**DESCRIPTION**: a path where a graphical representation of the Vtree will be dumped
+
+Method description:
+- A graphical representation of the Vtree is dumped in the specified _output_file_.
+#
+#### condition()
+Args:
+- _self_
+- _condition_: <br>
+    **TYPE**: _int_ <br>
+    **DESCRIPTION**: an integer contained in the values of the abstraction dictionary which corresponds to the abstraction of the atom that you want to condition over. Provide the opposite integer of the abstraction index in order to indicate a negation of the atom (condition over Not atom).<br>
+
+Method description:
+- Transform the _TheorySDD_ of phi into the _ThoerySDD_ of phi | _condition_.
+# 
+#### get_vtree()
+Args:
+- _self_
+
+Returns:
+- _Vtree_: <br>
+**DESCRIPTION**: the Vtree used for the construction of the _T-SDD_
+
+Method description:
+- Returns the Vtree used for the construction of the _T-SDD_.
+#
 
 ## Abstract Decision Diagrams
 

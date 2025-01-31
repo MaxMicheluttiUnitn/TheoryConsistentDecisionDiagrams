@@ -45,7 +45,7 @@ class TheoryBDD(TheoryDD):
         self,
         phi: FNode,
         solver: str | SMTEnumerator = "total",
-        tlemmas: List[FNode] = None,
+        tlemmas: List[FNode] | None = None,
         load_lemmas: str | None = None,
         sat_result: bool | None = None,
         use_ordering: List[FNode] | None = None,
@@ -274,19 +274,6 @@ class TheoryBDD(TheoryDD):
         else:
             self.logger.info("Unable to dump T-BDD file: format not unsupported")
             return
-
-    def get_mapping(self) -> Dict[FNode, str]:
-        """Returns the variable mapping used,
-        which defines the abstraction function"""
-        return self.get_abstraction()
-
-    def get_abstraction(self) -> Dict[FNode, str]:
-        """Returns the abstraction function"""
-        return self.abstraction
-
-    def get_refinement(self) -> Dict[str, FNode]:
-        """Returns the refinement function"""
-        return self.refinement
 
     def get_ordering(self) -> List[FNode]:
         """Returns the ordering of the variables"""

@@ -1,6 +1,7 @@
 """interface for the theory DD classes"""
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 import logging
 import time
 from typing import Dict, List, Tuple
@@ -37,7 +38,7 @@ class TheoryDD(ABC):
         self.logger.info("Normalizing phi according to solver...")
         phi = formula.get_normalized(phi, solver.get_converter())
         elapsed_time = time.time() - start_time
-        self.logger.info("Phi was normalized in %s seconds",str(elapsed_time))
+        self.logger.info("Phi was normalized in %s seconds", str(elapsed_time))
         computation_logger["phi normalization time"] = elapsed_time
         return phi
 
@@ -79,9 +80,7 @@ class TheoryDD(ABC):
         computation_logger["lemmas loading time"] = elapsed_time
         return tlemmas, sat_result
 
-    def _build_unsat(
-        self, walker: DDWalker, computation_logger: Dict
-    ) -> object:
+    def _build_unsat(self, walker: DDWalker, computation_logger: Dict) -> object:
         """builds the T-DD for an UNSAT formula
 
         Returns the root of the DD"""
@@ -89,7 +88,9 @@ class TheoryDD(ABC):
         self.logger.info("Building T-DD for UNSAT formula...")
         root = walker.walk(formula.bottom())
         elapsed_time = time.time() - start_time
-        self.logger.info("T-DD for UNSAT formula built in %s seconds", str(elapsed_time))
+        self.logger.info(
+            "T-DD for UNSAT formula built in %s seconds", str(elapsed_time)
+        )
         computation_logger["UNSAT DD building time"] = elapsed_time
         return root
 
@@ -125,8 +126,9 @@ class TheoryDD(ABC):
             tlemmas_dd = self._enumerate_qvars(tlemmas_dd, mapped_qvars)
             elapsed_time = time.time() - start_time
             self.logger.info(
-                    "fresh T-atoms quantification completed in %s seconds", str(elapsed_time)
-                )
+                "fresh T-atoms quantification completed in %s seconds",
+                str(elapsed_time),
+            )
             computation_logger["fresh T-atoms quantification time"] = elapsed_time
         else:
             computation_logger["fresh T-atoms quantification time"] = 0
@@ -136,7 +138,9 @@ class TheoryDD(ABC):
         self.logger.info("Joining phi DD and lemmas T-DD...")
         root = phi_bdd & tlemmas_dd
         elapsed_time = time.time() - start_time
-        self.logger.info("T-DD for phi and t-lemmas joint in %s seconds", str(elapsed_time))
+        self.logger.info(
+            "T-DD for phi and t-lemmas joint in %s seconds", str(elapsed_time)
+        )
         computation_logger["DD joining time"] = elapsed_time
         return root
 
@@ -184,4 +188,42 @@ class TheoryDD(ABC):
         Args:
             output_file (str): the path to the output file
         """
+        pass
+
+    def get_mapping(self) -> Dict[FNode, str]:
+        """Returns the variable mapping used,
+        which defines the abstraction function"""
+        return self.get_abstraction()
+
+    def get_abstraction(self) -> Dict[FNode, object]:
+        """Returns the abstraction function"""
+        return self.abstraction
+
+    def get_refinement(self) -> Dict[object, FNode]:
+        """Returns the refinement function"""
+        return self.refinement
+
+    @abstractmethod
+    def pick(self) -> Dict[FNode, bool] | None:
+        """Returns a model of the encoded formula"""
+        pass
+
+    @abstractmethod
+    def pick_all_iter(self) -> Iterator[Dict[FNode, bool]]:
+        """Returns an iterator over the models of the encoded formula"""
+        pass
+
+    @abstractmethod
+    def pick_all(self) -> List[Dict[FNode, bool]]:
+        """returns a list of all the models in the encoded formula"""
+        pass
+
+    @abstractmethod
+    def is_sat(self) -> bool:
+        """Returns True if the encoded formula is satisfiable"""
+        pass
+
+    @abstractmethod
+    def is_valid(self) -> bool:
+        """Returns True if the encoded formula is valid"""
         pass

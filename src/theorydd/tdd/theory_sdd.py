@@ -42,7 +42,7 @@ class TheorySDD(TheoryDD):
         self,
         phi: FNode,
         solver: str | SMTEnumerator = "total",
-        tlemmas: List[FNode] = None,
+        tlemmas: List[FNode] | None = None,
         load_lemmas: str | None = None,
         sat_result: bool | None = None,
         vtree_type: str = "balanced",
@@ -325,18 +325,6 @@ class TheorySDD(TheoryDD):
                 "V-Tree could not be saved: The file format of %s is not supported",
                 output_file,
             )
-
-    def get_mapping(self) -> Dict[FNode, int]:
-        """Returns the variable mapping used"""
-        return self.get_abstraction()
-
-    def get_refinement(self) -> Dict[int, FNode]:
-        """Returns the refinement mapping used"""
-        return self.refinement
-
-    def get_abstraction(self) -> Dict[FNode, int]:
-        """Returns the abstraction mapping used"""
-        return self.abstraction
 
     def _refine_model(self, model: Dict[int, int]) -> Dict[FNode, bool]:
         """Refines a model from the SDD to the original formula"""

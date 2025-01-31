@@ -8,14 +8,14 @@ First, install the dd dependency as follows:
 
 ```
     pip install --upgrade wheel cython
-    export DD_FETCH=1 DD_CUDD=1 DD_LDD=1
-    pip install git+https://github.com/masinag/dd.git@main -vvv --use-pep517 --no-build-isolation
+    export DD_FETCH=1 DD_CUDD=1
+    pip install dd=0.5.7 -vvv --use-pep517 --no-build-isolation
 ```
 
-You can check that the dependency is installed correctly if the following command does not give you ant errors
+You can check that the dependency is installed correctly if the following command does not give you ant errors:
 
 ```
-    python -c 'from dd import ldd; ldd.LDD(ldd.TVPI,0,0)'
+    python -c 'import dd.cudd'
 ```
 
 Now install the theorydd package (this package) from git
