@@ -30,8 +30,8 @@ class AbstractionBDD(TheoryBDD):
         phi: FNode,
         solver: str | SMTEnumerator = "total",
         use_ordering: List[FNode] | None = None,
-        computation_logger: Dict = None,
         folder_name: str | None = None,
+        computation_logger: Dict = None,
     ):
         """
         builds an AbstractionBDD
@@ -41,9 +41,9 @@ class AbstractionBDD(TheoryBDD):
             solver (str | SMTEnumerator) ["total"]: used for T-atoms normalization, can be set to total,
                 partial or extended_partial or a SMTEnumerator can be provided
             use_ordering (List[FNode] | None) [None]: a list of FNodes that will be used to order the BDD variables
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
             folder_name (str | None) [None]: the path to a folder where data to load the AbstractionBDD is stored.
                 If this is not None, then all other parameters are ignored
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
         self.logger = logging.getLogger("abstraction_bdd")
         self.structure_name = "Abstraction BDD"
@@ -86,7 +86,9 @@ class AbstractionBDD(TheoryBDD):
             normalization_solver (SMTEnumerator | str) ["total"]: the solver used to normalize the T-atoms
         """
         if not os.path.exists(folder_path):
-            raise FileNotFoundError(f"Cannot load Abstraction BDD: Folder {folder_path} does not exist")
+            raise FileNotFoundError(
+                f"Cannot load Abstraction BDD: Folder {folder_path} does not exist"
+            )
         if not os.path.isfile(f"{folder_path}/abstraction.json"):
             raise FileNotFoundError(
                 f"Cannot load Abstraction BDD: File {folder_path}/abstraction.json does not exist"
@@ -100,7 +102,7 @@ class AbstractionBDD(TheoryBDD):
         )
         # apply normalization to the abstraction
         self.abstraction = {
-            formula.get_normalized(k, smt_solver.get_converter()) : v
+            formula.get_normalized(k, smt_solver.get_converter()): v
             for k, v in abstraction.items()
         }
         self.refinement = {v: k for k, v in self.abstraction.items()}

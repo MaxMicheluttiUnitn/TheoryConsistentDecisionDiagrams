@@ -9,7 +9,8 @@ from theorydd.solvers.solver import SMTEnumerator
 from theorydd import formula
 from theorydd.tdd.theory_sdd import (
     TheorySDD,
-    vtree_load_from_folder as _vtree_load_from_folder)
+    vtree_load_from_folder as _vtree_load_from_folder,
+)
 from theorydd.util._utils import get_solver as _get_solver
 
 
@@ -30,8 +31,8 @@ class AbstractionSDD(TheorySDD):
         vtree_type: str = "balanced",
         use_vtree: Vtree | None = None,
         use_abstraction: Dict[FNode, int] | None = None,
-        computation_logger: Dict = None,
         folder_name: str | None = None,
+        computation_logger: Dict = None,
     ):
         """
         builds an AbstractionSDD
@@ -41,11 +42,11 @@ class AbstractionSDD(TheorySDD):
             solver (str | SMTEnumerator) ["total"]: used for T-atoms normalization, can be set to "total", "partial" or "extended_partial"
                 or a SMTEnumerator instance can be provided
             vtree_type (str) ["balanced"]: used for Vtree generation. Available values in theorydd.constants.VALID_VTREE
-            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
             folder_name (str | None) [None]: the path to a folder where data to load the AbstractionSDD is stored.
                 If this is not None, then all other parameters are ignored
+            computation_logger (Dict) [None]: a dictionary that will be updated to store computation info
         """
-        
+
         self.logger = logging.getLogger("theorydd_abstraction_sdd")
         self.structure_name = "Abstraction SDD"
         if folder_name is not None:
@@ -82,7 +83,9 @@ class AbstractionSDD(TheorySDD):
         # save sdd
         self.root.save(str.encode(folder_path + "/sdd.sdd"))
 
-    def _load_from_folder(self, folder_path: str, normalization_solver: SMTEnumerator | str = "total") -> None:
+    def _load_from_folder(
+        self, folder_path: str, normalization_solver: SMTEnumerator | str = "total"
+    ) -> None:
         """
         Load an AbstractionSDD from a folder
 
@@ -109,8 +112,13 @@ class AbstractionSDD(TheorySDD):
         self.vtree = _vtree_load_from_folder(folder_path)
         self.manager = SddManager.from_vtree(self.vtree)
         self.root = self.manager.read_sdd_file(str.encode(f"{folder_path}/sdd.sdd"))
-        abstraction = formula.load_abstraction_function(folder_path + "/abstraction.json")
-        self.abstraction = {formula.get_normalized(k, smt_solver.get_converter()): v for k, v in abstraction.items()}
+        abstraction = formula.load_abstraction_function(
+            folder_path + "/abstraction.json"
+        )
+        self.abstraction = {
+            formula.get_normalized(k, smt_solver.get_converter()): v
+            for k, v in abstraction.items()
+        }
         self.refinement = {v: k for k, v in self.abstraction.items()}
         self.qvars = []
         sdd_literals = [
@@ -119,7 +127,9 @@ class AbstractionSDD(TheorySDD):
         self.atom_literal_map = self._get_atom_literal_map(sdd_literals)
 
 
-def abstraction_sdd_load_from_folder(folder_path: str, normalizer_solver: SMTEnumerator | str = "total") -> AbstractionSDD:
+def abstraction_sdd_load_from_folder(
+    folder_path: str, normalizer_solver: SMTEnumerator | str = "total"
+) -> AbstractionSDD:
     """
     Load an AbstractionSDD from a folder
 

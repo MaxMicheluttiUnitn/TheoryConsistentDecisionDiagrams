@@ -601,7 +601,7 @@ Method description:
 
 A  [_TheoryBDD_](../src/theorydd/tdd/theory_bdd.py) instance is an instance of a [_TheoryDD_](#theorydd) which implements all abstract methods and builds the DD through the [CUDD library](https://largo.lip6.fr/trac/verif_tools/export/8/vis_dev/glu-2.1/src/cuBdd/doc/cudd.ps) wrapper provided by the [dd](https://github.com/tulip-control/dd) Python package.
 
-Constructor args:
+Constructor parameters:
 - _self_
 - _phi_: <br>
     **TYPE**: _FNode_ <br>
@@ -609,7 +609,7 @@ Constructor args:
 - _solver_: <br>
     **TYPE**: _SMTEnumerator | str_ <br>
     **DEFAULT VALUE**: _"total"_ <br>
-    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is use to compute enumeration (if necessary) and to apply normalization to theory atoms while building the DD.
+    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is used to compute enumeration (if necessary) and to apply normalization to theory atoms while building the DD.
 - _tlemmas_: <br>
     **TYPE**: _List[FNode] | None_<br>
     **DEFAULT VALUE**: _None_ <br>
@@ -667,7 +667,7 @@ Method description:
 
 A  [_TheorySDD_](../src/theorydd/tdd/theory_sdd.py) instance is an instance of a [_TheoryDD_](#theorydd) which implements all abstract methods and builds the DD through the [SDD library](http://reasoning.cs.ucla.edu/sdd/) wrapper provided by the [PySDD](https://github.com/ML-KULeuven/PySDD) Python package.
 
-Constructor args:
+Constructor parameters:
 - _self_
 - _phi_: <br>
     **TYPE**: _FNode_ <br>
@@ -675,7 +675,7 @@ Constructor args:
 - _solver_: <br>
     **TYPE**: _SMTEnumerator | str_ <br>
     **DEFAULT VALUE**: _"total"_ <br>
-    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is use to compute enumeration (if necessary) and to apply normalization to theory atoms while building the DD.
+    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is used to compute enumeration (if necessary) and to apply normalization to theory atoms while building the DD.
 - _tlemmas_: <br>
     **TYPE**: _List[FNode] | None_<br>
     **DEFAULT VALUE**: _None_ <br>
@@ -695,7 +695,7 @@ Constructor args:
 - _use_vtree: <br>
     **TYPE**: _Vtree | None_<br>
     **DEFAULT VALUE**: _None_ <br>
-    **DESCRIPTION**: if a Vtree is provided, the specified Vtree will be used and the _vtree_type_ parameter will be ignored. It is important to use this parameter together with the _use_abstraction_ parameter since the Vtree ordering in the resulting structure may be shuffled otherwise.
+    **DESCRIPTION**: if a Vtree is provided, the specified V-Tree will be used and the _vtree_type_ parameter will be ignored. It is important to use this parameter together with the _use_abstraction_ parameter since the Vtree ordering in the resulting structure may be shuffled otherwise.
 - _use_abstraction_: <br>
     **TYPE**: _Dict[Fnode,int] | None_<br>
     **DEFAULT VALUE**: _None_ <br>
@@ -703,7 +703,7 @@ Constructor args:
 - _folder_name_: <br>
     **TYPE**: _str | None_<br>
     **DEFAULT VALUE**: _None_ <br>
-    **DESCRIPTION**: if a string is provided, all other parameters except for _solver_ will be ignored and the _TheoryBDD_ will be loaded from the specified path
+    **DESCRIPTION**: if a string is provided, all other parameters except for _solver_ will be ignored and the _TheorySDD_ will be loaded from the specified path
 - _computation_logger_: <br>
     **TYPE**: _Dict | None_ <br>
     **DEFAULT VALUE**: _None_ <br>
@@ -748,7 +748,67 @@ Method description:
 
 ## Abstract Decision Diagrams
 
-The submodule **abstractdd** contains all Desision Diagrams compilers that **do not require computation of AllSMT** for compilation into the target language.
+The submodule **abstractdd** contains all Desision Diagrams compilers that **do not require computation of AllSMT** for compilation into the target language, whic are [AbstractionBDD](#abstractionbdd) and [AbstractionSDD](#abstractionsdd).
+
+### AbstractionBDD
+
+The [AbstractionBDD](../src/theorydd/abstractdd/abstraction_bdd.py) class inherits from [TheoryBDD](#theorybdd) and describes the _BDD_ of an SMT formula without adding any theory lemmas.
+
+Constructor parameters:
+- _self_
+- _phi_: <br>
+    **TYPE**: _FNode_ <br>
+    **DESCRIPTION**: the formula that has to be compiled into an _AbstractionBDD_
+- _solver_: <br>
+    **TYPE**: _SMTEnumerator | str_ <br>
+    **DEFAULT VALUE**: _"total"_ <br>
+    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is only used to apply normalization to theory atoms while building the DD.
+- _use_ordering_: <br>
+    **TYPE**: _List[FNode] | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a list of FNode is provided, this class will respect the provided ordering of variables when building the DD
+- _folder_name_: <br>
+    **TYPE**: _str | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a string is provided, all other parameters except for _solver_ will be ignored and the _AbstractionBDD_ will be loaded from the specified path
+- _computation_logger_: <br>
+    **TYPE**: _Dict | None_ <br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
+
+### AbstractionSDD
+
+The [AbstractionSDD](../src/theorydd/abstractdd/abstraction_bdd.py) class inherits from [TheorySDD](#theorysdd) and describes the _SDD_ of an SMT formula without adding any theory lemmas.
+
+Constructor parameters:
+- _self_
+- _phi_: <br>
+    **TYPE**: _FNode_ <br>
+    **DESCRIPTION**: the formula that has to be compiled into an _AbstractionSDD_
+- _solver_: <br>
+    **TYPE**: _SMTEnumerator | str_ <br>
+    **DEFAULT VALUE**: _"total"_ <br>
+    **DESCRIPTION**: if a string is provided, a new [_SMTEnumerator_](#smtenumerator) of the type specified from the string will be used during construction, otherwise the provided enumerator will be used. This parameter is only used to apply normalization to theory atoms while building the DD.
+- _vtree_type_: <br>
+    **TYPE**: _str_<br>
+    **DEFAULT VALUE**: _"balanced"_ <br>
+    **DESCRIPTION**: an indication of the shape of the V-Tree used for the construction of the SDD. Valid values for this parameter are specified in the _VALID_VTREE_ constant in the [constants](../src/theorydd/constants) module.
+- _use_vtree: <br>
+    **TYPE**: _Vtree | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a Vtree is provided, the specified V-Tree will be used and the _vtree_type_ parameter will be ignored. It is important to use this parameter together with the _use_abstraction_ parameter since the Vtree ordering in the resulting structure may be shuffled otherwise.
+- _use_abstraction_: <br>
+    **TYPE**: _Dict[Fnode,int] | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a _Dict[FNode,int]_ is provided, the specified abstraction function will be used while building the DD. It is important to use this parameter together with the _use_vtree_ parameter since the Vtree ordering in the resulting structure may be shuffled otherwise.
+- _folder_name_: <br>
+    **TYPE**: _str | None_<br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: if a string is provided, all other parameters except for _solver_ will be ignored and the _AbstractionSDD_ will be loaded from the specified path
+- _computation_logger_: <br>
+    **TYPE**: _Dict | None_ <br>
+    **DEFAULT VALUE**: _None_ <br>
+    **DESCRIPTION**: a _Dict_ passed by reference which will be updated with details from the computation
 
 ## d-DNNF
 
