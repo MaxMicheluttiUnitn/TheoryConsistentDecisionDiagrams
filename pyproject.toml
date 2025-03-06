@@ -19,9 +19,9 @@ classifiers = [
 dependencies = [
     "Cython==3.0.8",
     "pydot==1.4.2",
-    "PySDD==0.2.11",
-    "PySMT==0.9.6.dev53",
-    "dd==0.5.7",
+    "PySDD==1.0.0",
+    "PySMT==0.9.7.dev108",
+    "dd==0.6.0",
     "allsat_cnf @ git+https://github.com/masinag/allsat-cnf@main",
     "GitPython>=3.1.44",
     "python-dotenv==1.0.1"
